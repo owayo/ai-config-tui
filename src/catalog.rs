@@ -26,6 +26,8 @@ pub struct Entry {
     pub initial: String,
     #[serde(default)]
     pub retired: bool,
+    #[serde(default)]
+    pub deprecated: bool,
 }
 
 #[derive(Deserialize)]

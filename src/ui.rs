@@ -13,7 +13,7 @@ use crate::{
     app::{Action, App, Focus, Loaded, Modal},
     catalog::CATALOG,
     editor::Editor,
-    fields::Kind,
+    fields::{Field, Kind},
     profile::{Provider, expand_path},
 };
 
@@ -25,6 +25,7 @@ const MUTED: Color = Color::Rgb(137, 155, 172);
 const ACCENT: Color = Color::Rgb(105, 219, 195);
 const AMBER: Color = Color::Rgb(245, 194, 115);
 const RED: Color = Color::Rgb(248, 134, 141);
+const ORANGE: Color = Color::Rgb(255, 165, 0);
 const SELECTED: Color = Color::Rgb(35, 64, 70);
 
 pub fn draw(frame: &mut Frame, app: &mut App) {
@@ -136,6 +137,16 @@ fn profiles(frame: &mut Frame, app: &mut App, area: Rect) {
     frame.render_stateful_widget(list, area, &mut app.profile_state);
 }
 
+fn setting_color(field: &Field, fallback: Color) -> Color {
+    if field.retired {
+        RED
+    } else if field.deprecated {
+        ORANGE
+    } else {
+        fallback
+    }
+}
+
 fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     let profile = &app.profiles.items[app.selected];
     if let Loaded::Failed(error) = &app.documents[app.selected] {
@@ -182,7 +193,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             safe(&field.display_value())
         };
-        let name = if profile.provider == Provider::Claude && !field.retired {
+        let name = if profile.provider == Provider::Claude && field.warning_label().is_none() {
             format!(
                 "{}{}",
                 field.tree_prefix,
@@ -196,8 +207,8 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             format!("{name} +")
         };
-        if field.retired {
-            key.push_str(" [廃止]");
+        if let Some(warning) = field.warning_label() {
+            key.push_str(&format!(" [{warning}]"));
         }
         let label_indent = field
             .tree_prefix
@@ -208,18 +219,15 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 Line::from(key),
                 Line::from(Span::styled(
                     format!("{label_indent}{}", safe(&field.label)),
-                    Style::default().fg(if field.retired { RED } else { MUTED }),
+                    Style::default().fg(setting_color(field, MUTED)),
                 )),
             ])),
-            Cell::from(value).style(Style::default().fg(if field.retired {
-                RED
-            } else if field.value.is_some() {
-                ACCENT
-            } else {
-                MUTED
-            })),
+            Cell::from(value).style(Style::default().fg(setting_color(
+                field,
+                if field.value.is_some() { ACCENT } else { MUTED },
+            ))),
         ])
-        .style(Style::default().fg(if field.retired { RED } else { TEXT }))
+        .style(Style::default().fg(setting_color(field, TEXT)))
         .height(2)
     });
     let setting_count = rows.iter().filter(|field| !field.group).count();
@@ -258,7 +266,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         detail.push(Line::from(Span::styled(
             field.label.clone(),
             Style::default()
-                .fg(if field.retired { RED } else { ACCENT })
+                .fg(setting_color(&field, ACCENT))
                 .add_modifier(Modifier::BOLD),
         )));
         detail.push(Line::from(Span::styled(
@@ -267,17 +275,26 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 if field.group { "階層" } else { "キー" },
                 safe(&field.key())
             ),
-            Style::default().fg(if field.retired { RED } else { MUTED }),
+            Style::default().fg(setting_color(&field, MUTED)),
         )));
-        if field.retired {
+        if field.warning_label().is_some() {
             detail.push(Line::from(Span::styled(
-                "廃止済み · dで未設定に戻すと一覧から消えます。",
-                Style::default().fg(RED).add_modifier(Modifier::BOLD),
+                format!(
+                    "{} · dで未設定に戻すと一覧から消えます。",
+                    if field.retired {
+                        "廃止済み"
+                    } else {
+                        "非推奨"
+                    }
+                ),
+                Style::default()
+                    .fg(setting_color(&field, TEXT))
+                    .add_modifier(Modifier::BOLD),
             )));
         }
         detail.push(Line::from(Span::styled(
             safe(&field.description),
-            Style::default().fg(if field.retired { RED } else { TEXT }),
+            Style::default().fg(setting_color(&field, TEXT)),
         )));
         detail.push(Line::from(""));
         if !field.group {
@@ -302,21 +319,22 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
             if let Some(reason) = field.disabled_reason() {
                 detail.push(Line::from(Span::styled(
                     safe(reason),
-                    Style::default().fg(if field.retired { RED } else { AMBER }),
+                    Style::default().fg(setting_color(&field, AMBER)),
                 )));
             }
             detail.push(Line::from(""));
             let text = if !app.reveal && secret(&field.path.join(".")) {
-                "[hidden] · hで表示".into()
+                "[hidden] · hで表示"
             } else {
                 field
                     .value
-                    .unwrap_or_else(|| "未設定 · ファイルには書き込みません".into())
+                    .as_deref()
+                    .unwrap_or("未設定 · ファイルには書き込みません")
             };
-            detail.extend(safe(&text).lines().map(|line| {
+            detail.extend(safe(text).lines().map(|line| {
                 Line::from(Span::styled(
                     line.to_owned(),
-                    Style::default().fg(if field.retired { RED } else { TEXT }),
+                    Style::default().fg(setting_color(&field, TEXT)),
                 ))
             }));
             if !field.default_value.is_empty() {

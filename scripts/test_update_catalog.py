@@ -3,11 +3,24 @@
 import json
 import unittest
 
-from update_catalog import claude_entries, codex_entries, is_retired, preserve_retired
+from update_catalog import (
+    claude_entries,
+    codex_entries,
+    is_deprecated,
+    is_retired,
+    preserve_legacy,
+)
 
 
 class RetirementTests(unittest.TestCase):
     """Distinguish removed settings from supported legacy aliases."""
+
+    def test_deprecation_is_explicit_and_does_not_match_other_settings(self):
+        """Read warning blocks without marking a replacement as deprecated."""
+        self.assertTrue(
+            is_deprecated("> [!WARNING]\n>\n> **Deprecated** but still honored.")
+        )
+        self.assertFalse(is_deprecated("This setting replaces a deprecated option."))
 
     def test_explicit_removal_and_no_effect_notices(self):
         """Recognize warning blocks and unconditional no-effect descriptions."""
@@ -62,8 +75,10 @@ class RetirementTests(unittest.TestCase):
         )
         entries = {entry["key"]: entry for entry in claude_entries(text, models)}
         self.assertTrue(entries["removed_setting"]["retired"])
+        self.assertFalse(entries["removed_setting"]["deprecated"])
         self.assertTrue(entries["noop_setting"]["retired"])
         self.assertFalse(entries["old_alias"]["retired"])
+        self.assertTrue(entries["old_alias"]["deprecated"])
         self.assertFalse(entries["model"]["retired"])
 
     def test_codex_reference_and_schema_sibling_descriptions(self):
@@ -107,6 +122,7 @@ class RetirementTests(unittest.TestCase):
                     "type": "integer",
                     "description": "V1 depth. Ignored by V2.",
                 },
+                "flag_only": {"type": "boolean", "deprecated": True},
             },
         }
         for keyword in ["anyOf", "oneOf"]:
@@ -127,20 +143,25 @@ class RetirementTests(unittest.TestCase):
         )
         entries = {entry["key"]: entry for entry in codex_entries(text, schema, models)}
         self.assertTrue(entries["retired_choice"]["retired"])
+        self.assertFalse(entries["retired_choice"]["deprecated"])
         for key in ["retired_anyOf", "retired_oneOf", "retired_ref"]:
             self.assertTrue(entries[key]["retired"])
         self.assertTrue(entries["legacy_only"]["retired"])
         self.assertFalse(entries["old_alias"]["retired"])
+        self.assertTrue(entries["old_alias"]["deprecated"])
+        self.assertTrue(entries["flag_only"]["deprecated"])
         self.assertFalse(entries["max_depth"]["retired"])
 
     def test_known_removals_survive_missing_reference_entries(self):
         """Retain known removals without guessing that missing active keys retired."""
         removed = {"key": "removed_option", "retired": True}
+        deprecated = {"key": "deprecated_option", "retired": False, "deprecated": True}
         previous = {
             "claude": [
                 removed,
                 {"key": "missing_active_option", "retired": False},
                 {"key": "restored_option", "retired": True},
+                deprecated,
             ],
             "codex": [],
         }
@@ -148,12 +169,13 @@ class RetirementTests(unittest.TestCase):
             "claude": [{"key": "restored_option", "retired": False}],
             "codex": [],
         }
-        preserve_retired(catalog, previous)
+        preserve_legacy(catalog, previous)
         self.assertEqual(
             catalog["claude"],
             [
                 {"key": "restored_option", "retired": False},
-                removed,
+                {**removed, "deprecated": False},
+                deprecated,
             ],
         )
 

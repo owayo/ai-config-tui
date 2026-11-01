@@ -535,7 +535,7 @@ fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_f
         app.rows().iter().filter(|field| !field.group).count(),
         crate::catalog::entries(Provider::Claude)
             .iter()
-            .filter(|entry| !entry.retired)
+            .filter(|entry| !entry.retired && !entry.deprecated)
             .count(),
     );
     for name in [
@@ -653,7 +653,7 @@ fn claude_settings_are_grouped_parent_first_and_codex_stays_flat() {
         rows.iter().filter(|field| !field.group).count(),
         crate::catalog::entries(Provider::Claude)
             .iter()
-            .filter(|entry| !entry.retired)
+            .filter(|entry| !entry.retired && !entry.deprecated)
             .count()
     );
 
@@ -838,12 +838,12 @@ fn retired_settings_are_hidden_unless_the_key_is_present() {
             .any(|field| field.key() == "keybindingFlavor")
     );
     assert!(
-        app.rows()
+        !app.rows()
             .iter()
             .any(|field| field.key() == "includeCoAuthoredBy")
     );
     assert!(
-        app.rows()
+        !app.rows()
             .iter()
             .any(|field| field.key() == "disableArtifact")
     );
@@ -939,6 +939,129 @@ fn retired_rows_and_detail_keys_are_red_even_when_selected() {
         matches >= 2,
         "the setting key must be red in both the table and detail"
     );
+}
+
+#[test]
+fn deprecated_settings_are_hidden_unless_present_and_preserve_falsy_values() {
+    let fixture = Fixture::new();
+    let app = fixture.app();
+    assert!(
+        app.rows()
+            .iter()
+            .all(|field| field.warning_label().is_none())
+    );
+    for value in [
+        serde_json::json!(false),
+        serde_json::json!(null),
+        serde_json::json!(""),
+        serde_json::json!([]),
+    ] {
+        let original = serde_json::json!({"includeCoAuthoredBy":value}).to_string();
+        let config = fixture.config(Provider::Claude, &original);
+        let field = fields::fields(&config)
+            .into_iter()
+            .find(|field| field.key() == "includeCoAuthoredBy")
+            .unwrap();
+        assert!(field.deprecated && !field.retired);
+        assert_eq!(field.warning_label(), Some("非推奨"));
+        assert!(field.value.is_some());
+        assert_eq!(config.text, original);
+        assert!(!config.dirty());
+    }
+}
+
+#[test]
+fn deprecated_settings_follow_retired_settings_and_render_in_orange() {
+    let fixture = Fixture::new();
+    fixture.write(".claude/settings.json", r#"{"model":"opus","keybindingFlavor":"readline","voiceEnabled":false,"includeCoAuthoredBy":false,"disableArtifact":true}"#);
+    fixture.write(
+        ".codex/config.toml",
+        "web_search = 'live'\n[features]\nweb_search = false\n",
+    );
+    let mut app = fixture.app();
+    let rows = app.rows();
+    assert!(rows[0].retired);
+    assert!(
+        rows[1..4]
+            .iter()
+            .all(|field| field.deprecated && !field.retired)
+    );
+    assert!(
+        rows[4..]
+            .iter()
+            .all(|field| field.warning_label().is_none())
+    );
+    assert_eq!(rows[4].key(), "model");
+    assert!(rows[..4].iter().all(|field| field.tree_prefix.is_empty()));
+    assert!(!app.config().unwrap().dirty());
+
+    // Keep the key out of the search title when checking rendered field colors.
+    app.query = rows
+        .iter()
+        .find(|field| field.key() == "includeCoAuthoredBy")
+        .unwrap()
+        .label
+        .clone();
+    app.table_state.select(Some(0));
+    app.focus = Focus::Settings;
+    let mut terminal = Terminal::new(TestBackend::new(180, 42)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let orange = ratatui::style::Color::Rgb(255, 165, 0);
+    let text = "includeCoAuthoredBy";
+    let mut matches = 0;
+    for row in terminal.backend().buffer().content.chunks(180) {
+        for cells in row.windows(text.len()) {
+            if cells.iter().map(|cell| cell.symbol()).collect::<String>() == text {
+                assert!(cells.iter().all(|cell| cell.fg == orange));
+                if matches == 0 {
+                    let value = row
+                        .windows("false".len())
+                        .find(|cells| {
+                            cells.iter().map(|cell| cell.symbol()).collect::<String>() == "false"
+                        })
+                        .unwrap();
+                    assert!(value.iter().all(|cell| cell.fg == orange));
+                }
+                matches += 1;
+            }
+        }
+    }
+    assert!(matches >= 2, "table and detail must both use orange");
+
+    app.handle_key(key(KeyCode::Char(']')));
+    assert_eq!(app.current_field().unwrap().key(), "features.web_search");
+    assert!(app.current_field().unwrap().deprecated);
+    assert_eq!(app.current_field().unwrap().value.as_deref(), Some("false"));
+    assert!(
+        app.rows()
+            .iter()
+            .any(|field| field.key() == "web_search" && !field.deprecated)
+    );
+    assert!(!app.config().unwrap().dirty());
+}
+
+#[test]
+fn deprecated_settings_remain_editable_and_reset_and_undo_update_visibility() {
+    let fixture = Fixture::new();
+    let original = r#"{"includeCoAuthoredBy":false}"#;
+    let file = fixture.write(".claude/settings.json", original);
+    let mut app = fixture.app();
+    select_field(&mut app, "includeCoAuthoredBy");
+    choose(&mut app, "true");
+    assert!(app.current_field().unwrap().deprecated);
+    assert_eq!(app.current_field().unwrap().value.as_deref(), Some("true"));
+    app.handle_key(key(KeyCode::Char('u')));
+    assert_eq!(app.current_field().unwrap().value.as_deref(), Some("false"));
+    app.focus = Focus::Settings;
+    app.query = "includeCoAuthoredBy".into();
+    app.handle_key(key(KeyCode::Char('d')));
+    app.handle_key(key(KeyCode::Enter));
+    assert!(app.rows().is_empty());
+    app.handle_key(key(KeyCode::Char('u')));
+    assert_eq!(app.rows().len(), 1);
+    assert!(app.current_field().unwrap().deprecated);
+    assert!(!app.config().unwrap().dirty());
+    assert_eq!(fs::read_to_string(file).unwrap(), original);
 }
 
 #[test]

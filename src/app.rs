@@ -148,6 +148,8 @@ impl App {
         let (retired, active): (Vec<_>, Vec<_>) = fields::fields(config)
             .into_iter()
             .partition(|field| field.retired);
+        let (deprecated, active): (Vec<_>, Vec<_>) =
+            active.into_iter().partition(|field| field.deprecated);
         let active = if config.provider == Provider::Claude {
             fields::hierarchy(active, &self.query)
         } else {
@@ -158,6 +160,7 @@ impl App {
         };
         retired
             .into_iter()
+            .chain(deprecated)
             .filter(|field| field.matches_query(&self.query))
             .chain(active)
             .collect()

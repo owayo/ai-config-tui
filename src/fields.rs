@@ -35,6 +35,7 @@ pub struct Field {
     pub group: bool,
     pub tree_prefix: String,
     pub retired: bool,
+    pub deprecated: bool,
 }
 
 impl Field {
@@ -49,6 +50,15 @@ impl Field {
             || format!("{} {} {}", self.key(), self.label, self.description)
                 .to_lowercase()
                 .contains(&query.to_lowercase())
+    }
+    pub fn warning_label(&self) -> Option<&'static str> {
+        if self.retired {
+            Some("廃止")
+        } else if self.deprecated {
+            Some("非推奨")
+        } else {
+            None
+        }
     }
     pub fn disabled_reason(&self) -> Option<&str> {
         self.read_only.as_deref().or(if self.template {
@@ -247,6 +257,7 @@ pub fn fields(config: &Config) -> Vec<Field> {
         field.read_only = entry.read_only.clone();
         field.initial = entry.initial.clone();
         field.retired = entry.retired;
+        field.deprecated = entry.deprecated;
         field.template = entry.key.contains(['<', '*']);
     }
     if let Some(parsed) = &config.parsed {
@@ -287,7 +298,7 @@ pub fn fields(config: &Config) -> Vec<Field> {
             }
         }
     }
-    fields.retain(|field| !field.retired || field.value.is_some());
+    fields.retain(|field| field.warning_label().is_none() || field.value.is_some());
     fields
 }
 
@@ -311,6 +322,7 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         group: false,
         tree_prefix: String::new(),
         retired: false,
+        deprecated: false,
     }
 }
 
@@ -338,6 +350,7 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         group: false,
         tree_prefix: String::new(),
         retired: false,
+        deprecated: false,
     }
 }
 

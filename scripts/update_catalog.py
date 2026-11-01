@@ -92,7 +92,31 @@ def metadata(key, type_name, scope, source):
         "read_only": None,
         "initial": initial,
         "retired": False,
+        "deprecated": False,
     }
+
+
+def notice_introduction(text):
+    """Normalize the first paragraph of a reference entry or warning block.
+
+    Returns:
+        str: Plain introductory text without the warning markup.
+
+    """
+    text = re.sub(r"(?m)^\s*> ?", "", text).strip()
+    text = re.sub(r"^\[![A-Z]+\]\s*", "", text).strip()
+    introduction = plain(re.split(r"\n\s*\n", text, maxsplit=1)[0])
+    return " ".join(introduction.split())
+
+
+def is_deprecated(text):
+    """Recognize an explicit deprecation notice for the setting itself.
+
+    Returns:
+        bool: Whether the reference marks this setting as deprecated.
+
+    """
+    return bool(re.match(r"deprecated\b", notice_introduction(text), re.IGNORECASE))
 
 
 def is_retired(text):
@@ -102,10 +126,7 @@ def is_retired(text):
         bool: Whether the setting has been removed or no longer has an effect.
 
     """
-    text = re.sub(r"(?m)^\s*> ?", "", text).strip()
-    text = re.sub(r"^\[![A-Z]+\]\s*", "", text).strip()
-    introduction = plain(re.split(r"\n\s*\n", text, maxsplit=1)[0])
-    introduction = " ".join(introduction.split())
+    introduction = notice_introduction(text)
     if re.match(r"(?:removed|retired)\b", introduction, re.IGNORECASE):
         return True
     if not re.match(r"deprecated\b", introduction, re.IGNORECASE):
@@ -207,6 +228,7 @@ def claude_entries(text, models):
                 "この項目の適用範囲はユーザー設定ではありません。公式ページを確認してください。"
             )
         entry["retired"] = is_retired(body)
+        entry["deprecated"] = not entry["retired"] and is_deprecated(body)
         if entry["retired"]:
             entry["read_only"] = "公式リファレンスで廃止済みとされている設定です。"
         entries.append(entry)
@@ -324,10 +346,10 @@ def codex_entries(text, schema, models):
             section,
         )
     }
-    schema_descriptions = {}
+    schema_nodes = {}
     for parts, node in schema_paths(schema, schema):
         key = ".".join(parts)
-        schema_descriptions[key] = node.get("description", "")
+        schema_nodes[key] = node
         if key not in entries:
             entries[key] = metadata(
                 key,
@@ -337,11 +359,23 @@ def codex_entries(text, schema, models):
             )
     for key, entry in entries.items():
         nodes = schema_at(key.split("."), schema)
+        node = schema_nodes.get(key, {})
         entry["retired"] = (
             is_retired(descriptions.get(key, ""))
-            or is_retired(schema_descriptions.get(key, ""))
+            or is_retired(node.get("description", ""))
             or bool(nodes)
             and all(is_retired(node.get("description", "")) for node in nodes)
+        )
+        entry["deprecated"] = not entry["retired"] and (
+            is_deprecated(descriptions.get(key, ""))
+            or is_deprecated(node.get("description", ""))
+            or node.get("deprecated") is True
+            or bool(nodes)
+            and all(
+                variant.get("deprecated") is True
+                or is_deprecated(variant.get("description", ""))
+                for variant in nodes
+            )
         )
         if entry["retired"]:
             entry["read_only"] = "公式リファレンスで廃止済みとされている設定です。"
@@ -407,14 +441,15 @@ def codex_entries(text, schema, models):
     return list(entries.values())
 
 
-def preserve_retired(catalog, previous):
-    """Keep confirmed removals when their reference entries disappear."""
+def preserve_legacy(catalog, previous):
+    """Keep known removed or deprecated definitions if their entries disappear."""
     for provider in ("claude", "codex"):
         keys = {entry["key"] for entry in catalog[provider]}
         catalog[provider].extend(
-            entry
+            {"retired": False, "deprecated": False, **entry}
             for entry in previous.get(provider, [])
-            if entry.get("retired") is True and entry["key"] not in keys
+            if (entry.get("retired") is True or entry.get("deprecated") is True)
+            and entry["key"] not in keys
         )
 
 
@@ -487,7 +522,7 @@ def main():
             entry for entry in catalog["claude"] if entry["key"] == "outputStyle"
         )
         output_style.update(choices=styles, custom=True, kind="string")
-    preserve_retired(catalog, previous)
+    preserve_legacy(catalog, previous)
     destination.parent.mkdir(exist_ok=True)
     destination.write_text(
         json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
