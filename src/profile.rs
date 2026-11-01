@@ -3,7 +3,7 @@ use std::{
     path::{Path, PathBuf},
 };
 
-use anyhow::{Context, Result, ensure};
+use anyhow::{Context, Result, bail, ensure};
 use serde::{Deserialize, Serialize};
 
 use crate::storage::Snapshot;
@@ -16,6 +16,50 @@ pub enum Provider {
 }
 
 impl Provider {
+    pub fn detect(directory: &Path) -> Result<Option<Self>> {
+        let has_file = |name: &str| -> Result<bool> {
+            match std::fs::metadata(directory.join(name)) {
+                Ok(metadata) => Ok(metadata.is_file()),
+                Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(false),
+                Err(error) => Err(error).context("種類の判定に必要なファイル情報を取得できません"),
+            }
+        };
+        match (has_file("settings.json")?, has_file("config.toml")?) {
+            (true, false) => return Ok(Some(Self::Claude)),
+            (false, true) => return Ok(Some(Self::Codex)),
+            (true, true) => return Ok(None),
+            (false, false) => {}
+        }
+        let name = directory
+            .file_name()
+            .unwrap_or_default()
+            .to_string_lossy()
+            .to_lowercase();
+        for (prefix, provider) in [
+            (".claude", Self::Claude),
+            ("claude", Self::Claude),
+            (".codex", Self::Codex),
+            ("codex", Self::Codex),
+        ] {
+            match name.strip_prefix(prefix) {
+                Some(suffix) if suffix.is_empty() || suffix.starts_with(['-', '_', '.']) => {
+                    return Ok(Some(provider));
+                }
+                _ => {}
+            }
+        }
+        Ok(None)
+    }
+
+    pub fn resolve(choice: Option<Self>, directory: &Path) -> Result<Self> {
+        if let Some(provider) = choice {
+            return Ok(provider);
+        }
+        if let Some(provider) = Self::detect(directory)? {
+            return Ok(provider);
+        }
+        bail!("種類を自動判定できません。種類の欄でClaude CodeかCodexを選択してください")
+    }
     pub fn label(self) -> &'static str {
         match self {
             Self::Claude => "Claude Code",
@@ -139,6 +183,28 @@ impl Profiles {
         ensure!(index < self.items.len(), "プロファイルが見つかりません");
         let mut items = self.items.clone();
         items.remove(index);
+        self.persist(&items)?;
+        self.items = items;
+        Ok(())
+    }
+
+    pub fn set_provider(&mut self, index: usize, provider: Provider) -> Result<()> {
+        ensure!(
+            index >= 2 && index < self.items.len(),
+            "追加プロファイルの名前を指定してください"
+        );
+        if self.items[index].provider == provider {
+            return Ok(());
+        }
+        let mut items = self.items.clone();
+        items[index].provider = provider;
+        let others = items
+            .iter()
+            .enumerate()
+            .filter(|(other, _)| *other != index)
+            .map(|(_, profile)| profile.clone())
+            .collect::<Vec<_>>();
+        validate_profile(&others, &items[index])?;
         self.persist(&items)?;
         self.items = items;
         Ok(())

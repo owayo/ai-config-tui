@@ -37,6 +37,19 @@ fn cli_registers_and_removes_profiles_without_touching_their_configuration() {
     assert!(listed.status.success());
     assert!(String::from_utf8_lossy(&listed.stdout).contains("Work\tCodex"));
     assert!(
+        run(&["profile", "set-provider", "Work", "--provider", "claude"])
+            .status
+            .success()
+    );
+    assert!(
+        String::from_utf8_lossy(&run(&["profile", "list"]).stdout).contains("Work\tClaude Code")
+    );
+    assert!(
+        run(&["profile", "set-provider", "Work", "--provider", "codex"])
+            .status
+            .success()
+    );
+    assert!(
         !run(&[
             "profile",
             "add",

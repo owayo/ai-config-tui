@@ -14,6 +14,7 @@ use crate::{
     catalog::CATALOG,
     editor::Editor,
     fields::Kind,
+    profile::{Provider, expand_path},
 };
 
 const BG: Color = Color::Rgb(17, 23, 31);
@@ -426,8 +427,22 @@ fn modal(frame: &mut Frame, app: &mut App) {
                 Constraint::Length(1),
             ])
             .split(area.inner(ratatui::layout::Margin::new(2, 1)));
+            let directory_text = directory.text();
+            let expanded = expand_path(std::path::Path::new(directory_text.trim()), &app.home);
+            let detected = expanded
+                .as_ref()
+                .ok()
+                .and_then(|path| Provider::detect(path).ok().flatten());
+            let effective = provider.or(detected);
+            let kind_label = match provider {
+                Some(value) => format!("{}（手動）", value.label()),
+                None => effective.map_or_else(
+                    || "自動判定（未判定）".into(),
+                    |value| format!("自動判定 → {}", value.label()),
+                ),
+            };
             frame.render_widget(
-                Paragraph::new(format!("  ‹ {} ›   ← → / Spaceで切替", provider.label()))
+                Paragraph::new(format!("  ‹ {kind_label} ›   ← → / Spaceで切替"))
                     .block(panel("種類", *active == 0)),
                 parts[0],
             );
@@ -443,6 +458,17 @@ fn modal(frame: &mut Frame, app: &mut App) {
                 frame.render_widget(
                     Paragraph::new(safe(error))
                         .style(Style::default().fg(RED))
+                        .wrap(Wrap { trim: false }),
+                    parts[3],
+                );
+            } else {
+                let message = match (expanded, effective) {
+                    (Ok(path), Some(value)) => format!("対象: {}", short_path(&path.join(value.filename()), app)),
+                    _ => "ディレクトリから自動判定します。未判定の場合は種類を手動で選択してください。".into(),
+                };
+                frame.render_widget(
+                    Paragraph::new(message)
+                        .style(Style::default().fg(MUTED))
                         .wrap(Wrap { trim: false }),
                     parts[3],
                 );

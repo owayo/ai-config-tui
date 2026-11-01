@@ -44,7 +44,7 @@ pub enum Modal {
         error: Option<String>,
     },
     Add {
-        provider: Provider,
+        provider: Option<Provider>,
         name: Editor,
         directory: Editor,
         active: usize,
@@ -226,7 +226,7 @@ impl App {
             KeyCode::Char('E') | KeyCode::F(4) => self.edit_document(),
             KeyCode::Char('a') => {
                 self.modal = Some(Modal::Add {
-                    provider: Provider::Claude,
+                    provider: None,
                     name: Editor::new(""),
                     directory: Editor::new("~/"),
                     active: 0,
@@ -391,7 +391,8 @@ impl App {
                     let result =
                         expand_path(std::path::Path::new(directory.text().trim()), &self.home)
                             .and_then(|directory| {
-                                self.profiles.add(name.text(), *provider, directory)
+                                let detected = Provider::resolve(*provider, &directory)?;
+                                self.profiles.add(name.text(), detected, directory)
                             });
                     match result {
                         Ok(()) => {
@@ -408,10 +409,18 @@ impl App {
                             *active = (*active + 1) % 3
                         }
                         KeyCode::BackTab | KeyCode::Up => *active = (*active + 2) % 3,
-                        KeyCode::Left | KeyCode::Right | KeyCode::Char(' ') if *active == 0 => {
+                        KeyCode::Right | KeyCode::Char(' ') if *active == 0 => {
                             *provider = match provider {
-                                Provider::Claude => Provider::Codex,
-                                Provider::Codex => Provider::Claude,
+                                None => Some(Provider::Claude),
+                                Some(Provider::Claude) => Some(Provider::Codex),
+                                Some(Provider::Codex) => None,
+                            }
+                        }
+                        KeyCode::Left if *active == 0 => {
+                            *provider = match provider {
+                                None => Some(Provider::Codex),
+                                Some(Provider::Codex) => Some(Provider::Claude),
+                                Some(Provider::Claude) => None,
                             }
                         }
                         _ if *active == 1 => name.handle(key, false),

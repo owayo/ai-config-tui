@@ -372,7 +372,7 @@ fn tui_add_dialog_registers_a_codex_profile() {
     let fixture = Fixture::new();
     let mut app = fixture.app();
     app.handle_key(key(KeyCode::Char('a')));
-    app.handle_key(key(KeyCode::Right));
+    app.handle_key(key(KeyCode::Left));
     app.handle_key(key(KeyCode::Tab));
     for letter in "Work".chars() {
         app.handle_key(key(KeyCode::Char(letter)));
@@ -647,4 +647,129 @@ fn selection_dialog_renders_and_scrolls_at_the_minimum_terminal_size() {
     assert!(content.contains("任意の値を入力"), "{content}");
     app.handle_key(key(KeyCode::Enter));
     terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+}
+
+#[test]
+fn provider_detection_uses_config_files_then_directory_names() {
+    let fixture = Fixture::new();
+    fixture.write("work/config.toml", "model = 'custom'\n");
+    assert_eq!(
+        Provider::detect(&fixture.path("work")).unwrap(),
+        Some(Provider::Codex)
+    );
+    fixture.write("home/settings.json", "{}");
+    assert_eq!(
+        Provider::detect(&fixture.path("home")).unwrap(),
+        Some(Provider::Claude)
+    );
+    assert_eq!(
+        Provider::detect(&fixture.path(".codex-work")).unwrap(),
+        Some(Provider::Codex)
+    );
+    assert_eq!(
+        Provider::detect(&fixture.path(".claude-home")).unwrap(),
+        Some(Provider::Claude)
+    );
+    assert_eq!(Provider::detect(&fixture.path("unknown")).unwrap(), None);
+    assert_eq!(Provider::detect(&fixture.path(".codexish")).unwrap(), None);
+    fixture.write(".claude-other/config.toml", "");
+    assert_eq!(
+        Provider::detect(&fixture.path(".claude-other")).unwrap(),
+        Some(Provider::Codex)
+    );
+    fixture.write(".codex-mixed/settings.json", "{}");
+    fixture.write(".codex-mixed/config.toml", "");
+    assert_eq!(
+        Provider::detect(&fixture.path(".codex-mixed")).unwrap(),
+        None
+    );
+    assert!(Provider::resolve(None, &fixture.path(".codex-mixed")).is_err());
+    assert_eq!(
+        Provider::resolve(Some(Provider::Claude), &fixture.path("work")).unwrap(),
+        Provider::Claude
+    );
+}
+
+#[test]
+fn add_dialog_auto_detects_codex_without_changing_the_type_control() {
+    let fixture = Fixture::new();
+    fixture.write("work/config.toml", "model = 'custom'\n");
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char('a')));
+    let Some(Modal::Add {
+        provider,
+        name,
+        directory,
+        ..
+    }) = &mut app.modal
+    else {
+        panic!()
+    };
+    assert!(provider.is_none());
+    *name = Editor::new("Work");
+    *directory = Editor::new(fixture.path("work").to_str().unwrap());
+    app.handle_key(control('s'));
+    assert!(app.modal.is_none());
+    let profile = &app.profiles.items[app.selected];
+    assert_eq!(profile.provider, Provider::Codex);
+    assert_eq!(profile.path(), fixture.path("work/config.toml"));
+    assert_eq!(app.config().unwrap().provider, Provider::Codex);
+    assert!(app.rows().iter().any(|field| field.key() == "sandbox_mode"));
+    assert!(!fixture.path("work/settings.json").exists());
+    let loaded = Profiles::load(
+        fixture.path("registry/profiles.toml"),
+        fixture.directory.path(),
+    )
+    .unwrap();
+    assert_eq!(loaded.items[2].provider, Provider::Codex);
+}
+
+#[test]
+fn add_dialog_refuses_unknown_auto_types_and_respects_manual_selection() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char('a')));
+    let Some(Modal::Add {
+        name, directory, ..
+    }) = &mut app.modal
+    else {
+        panic!()
+    };
+    *name = Editor::new("Work");
+    *directory = Editor::new(fixture.path("work").to_str().unwrap());
+    app.handle_key(control('s'));
+    assert_eq!(app.profiles.items.len(), 2);
+    assert!(!fixture.path("registry/profiles.toml").exists());
+    let Some(Modal::Add { provider, .. }) = &mut app.modal else {
+        panic!()
+    };
+    *provider = Some(Provider::Codex);
+    app.handle_key(control('s'));
+    assert!(app.modal.is_none());
+    assert_eq!(app.profiles.items[app.selected].provider, Provider::Codex);
+}
+
+#[test]
+fn changing_a_stored_provider_preserves_settings_and_creates_a_registry_backup() {
+    let fixture = Fixture::new();
+    fixture.write("work/config.toml", "model = 'custom'\n");
+    let mut profiles = fixture.profiles();
+    profiles
+        .add("Work".into(), Provider::Claude, fixture.path("work"))
+        .unwrap();
+    let before = fs::read(fixture.path("registry/profiles.toml")).unwrap();
+    profiles.set_provider(2, Provider::Codex).unwrap();
+    assert_eq!(profiles.items[2].provider, Provider::Codex);
+    assert_eq!(profiles.items[2].path(), fixture.path("work/config.toml"));
+    assert_eq!(
+        fs::read_to_string(fixture.path("work/config.toml")).unwrap(),
+        "model = 'custom'\n"
+    );
+    assert!(!fixture.path("work/settings.json").exists());
+    let backups = fs::read_dir(fixture.path("state/backups"))
+        .unwrap()
+        .map(|entry| fs::read(entry.unwrap().path()).unwrap())
+        .collect::<Vec<_>>();
+    assert!(backups.contains(&before));
+    assert!(profiles.set_provider(0, Provider::Codex).is_err());
 }

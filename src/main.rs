@@ -45,12 +45,18 @@ enum ProfileCommand {
         #[arg(long)]
         name: String,
         #[arg(long, value_enum)]
-        provider: Provider,
+        provider: Option<Provider>,
         #[arg(long)]
         directory: PathBuf,
     },
     Remove {
         name: String,
+    },
+    #[command(about = "登録済みプロファイルの種類を変更")]
+    SetProvider {
+        name: String,
+        #[arg(long, value_enum)]
+        provider: Provider,
     },
 }
 
@@ -76,7 +82,8 @@ fn main() -> Result<()> {
                 provider,
                 directory,
             } => {
-                profiles.add(name, provider, expand_path(&directory, &home)?)?;
+                let directory = expand_path(&directory, &home)?;
+                profiles.add(name, Provider::resolve(provider, &directory)?, directory)?;
                 println!("プロファイルを登録しました");
             }
             ProfileCommand::Remove { name } => {
@@ -87,6 +94,15 @@ fn main() -> Result<()> {
                     .ok_or_else(|| anyhow::anyhow!("プロファイルが見つかりません"))?;
                 profiles.remove(index)?;
                 println!("登録を解除しました（設定ファイルは保持されます）");
+            }
+            ProfileCommand::SetProvider { name, provider } => {
+                let index = profiles
+                    .items
+                    .iter()
+                    .position(|item| item.name == name)
+                    .ok_or_else(|| anyhow::anyhow!("プロファイルが見つかりません"))?;
+                profiles.set_provider(index, provider)?;
+                println!("プロファイルの種類を{}に変更しました", provider.label());
             }
         }
         return Ok(());

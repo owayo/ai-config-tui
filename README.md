@@ -63,15 +63,20 @@ make uninstall INSTALL_PATH="$HOME/.local/bin"
 
 ## 設定先の追加
 
-TUIの`a`で種類・名前・ディレクトリを入力し、`Ctrl+S`で登録します。CLIからも操作できます。
+TUIの`a`で名前とディレクトリを入力し、`Ctrl+S`で登録します。種類の初期値は自動判定です。`config.toml`があればCodex、`settings.json`があればClaude Codeとして判定します。両方ある場合は手動で種類を選択してください。ファイルがまだなければ`.codex-work`・`.claude-work`などのディレクトリ名で判定し、それでも決まらなければ種類の選択を求めます。追加画面には登録先の設定ファイルも表示します。
+
+CLIでも`--provider`を省略すると自動判定します。手動で指定した種類は自動判定より優先します。
 
 ```sh
 ai-config-tui profile add --name Work --provider claude --directory ~/.claude-work
 ai-config-tui profile add --name Home --provider codex --directory ~/.codex-home
 ai-config-tui profile list
+ai-config-tui profile set-provider Work --provider codex
 ai-config-tui --profile Work
 ai-config-tui profile remove Work
 ```
+
+登録済みの種類を修正する場合は`profile set-provider`を使います。変更するのは登録情報で、Claude Code・Codexの設定ファイルはそのまま保持します。
 
 登録先は`~/.config/ai-config-tui/profiles.toml`です。`XDG_CONFIG_HOME`と`--registry PATH`でも変更できます。`CLAUDE_CONFIG_DIR`・`CODEX_HOME`の指定先も一覧に追加します。環境変数から追加された設定先は、登録を解除しても次回起動時に再表示されます。
 
