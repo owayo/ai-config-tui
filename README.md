@@ -71,6 +71,8 @@ sandbox
    └─ allowedDomains
 ```
 
+廃止・無効な設定は未設定なら非表示です。設定済みなら一覧の先頭に完全なキーと「廃止」を赤色で表示します。`false`・空文字・空配列・`null`も設定済みとして扱います。値は自動で削除せず、`d`で未設定にすると一覧から消え、`u`で取り消すと再表示されます。まだ機能する非推奨の設定は通常表示です。
+
 管理者専用、別ファイル向け、廃止済みの設定は参照表示です。名前が可変の項目は`<name>`などのテンプレートで表示し、設定済みの項目は具体名でも表示します。新しい名前の定義には`E`の全体編集を使えます。
 
 一覧の更新は`make catalog`です。Python 3.11以降とcurlで公式資料を取得し、キー・型・選択肢・適用範囲と取得元のSHA-256を[data/settings-catalog.json](data/settings-catalog.json)へ保存します。通常の起動・ビルドでは同梱データを使います。
@@ -115,4 +117,7 @@ ai-config-tui profile remove Work
 ```sh
 make check
 make build
+
+# カタログ生成器のテスト（Python 3.11以降、ネットワーク不要）
+python3 -m unittest discover -s scripts -p 'test_*.py'
 ```

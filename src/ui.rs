@@ -182,7 +182,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             safe(&field.display_value())
         };
-        let name = if profile.provider == Provider::Claude {
+        let name = if profile.provider == Provider::Claude && !field.retired {
             format!(
                 "{}{}",
                 field.tree_prefix,
@@ -191,11 +191,14 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             safe(&field.key())
         };
-        let key = if field.common {
+        let mut key = if field.common {
             name
         } else {
             format!("{name} +")
         };
+        if field.retired {
+            key.push_str(" [廃止]");
+        }
         let label_indent = field
             .tree_prefix
             .replace("├─ ", "│  ")
@@ -205,15 +208,18 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 Line::from(key),
                 Line::from(Span::styled(
                     format!("{label_indent}{}", safe(&field.label)),
-                    Style::default().fg(MUTED),
+                    Style::default().fg(if field.retired { RED } else { MUTED }),
                 )),
             ])),
-            Cell::from(value).style(Style::default().fg(if field.value.is_some() {
+            Cell::from(value).style(Style::default().fg(if field.retired {
+                RED
+            } else if field.value.is_some() {
                 ACCENT
             } else {
                 MUTED
             })),
         ])
+        .style(Style::default().fg(if field.retired { RED } else { TEXT }))
         .height(2)
     });
     let setting_count = rows.iter().filter(|field| !field.group).count();
@@ -251,7 +257,9 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     if let Some(field) = app.current_field() {
         detail.push(Line::from(Span::styled(
             field.label.clone(),
-            Style::default().fg(ACCENT).add_modifier(Modifier::BOLD),
+            Style::default()
+                .fg(if field.retired { RED } else { ACCENT })
+                .add_modifier(Modifier::BOLD),
         )));
         detail.push(Line::from(Span::styled(
             format!(
@@ -259,9 +267,18 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 if field.group { "階層" } else { "キー" },
                 safe(&field.key())
             ),
-            Style::default().fg(MUTED),
+            Style::default().fg(if field.retired { RED } else { MUTED }),
         )));
-        detail.push(Line::from(safe(&field.description)));
+        if field.retired {
+            detail.push(Line::from(Span::styled(
+                "廃止済み · dで未設定に戻すと一覧から消えます。",
+                Style::default().fg(RED).add_modifier(Modifier::BOLD),
+            )));
+        }
+        detail.push(Line::from(Span::styled(
+            safe(&field.description),
+            Style::default().fg(if field.retired { RED } else { TEXT }),
+        )));
         detail.push(Line::from(""));
         if !field.group {
             detail.push(Line::from(Span::styled(
@@ -285,7 +302,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
             if let Some(reason) = field.disabled_reason() {
                 detail.push(Line::from(Span::styled(
                     safe(reason),
-                    Style::default().fg(AMBER),
+                    Style::default().fg(if field.retired { RED } else { AMBER }),
                 )));
             }
             detail.push(Line::from(""));
@@ -296,7 +313,12 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                     .value
                     .unwrap_or_else(|| "未設定 · ファイルには書き込みません".into())
             };
-            detail.extend(safe(&text).lines().map(|line| Line::from(line.to_owned())));
+            detail.extend(safe(&text).lines().map(|line| {
+                Line::from(Span::styled(
+                    line.to_owned(),
+                    Style::default().fg(if field.retired { RED } else { TEXT }),
+                ))
+            }));
             if !field.default_value.is_empty() {
                 detail.push(Line::from(format!(
                     "公式の既定値: {}",

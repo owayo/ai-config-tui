@@ -531,13 +531,18 @@ fn localized_help_matches_official_keys_and_unknown_children_do_not_borrow_paren
 fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_files() {
     let fixture = Fixture::new();
     let mut app = fixture.app();
-    assert!(app.rows().len() >= 247);
+    assert_eq!(
+        app.rows().iter().filter(|field| !field.group).count(),
+        crate::catalog::entries(Provider::Claude)
+            .iter()
+            .filter(|entry| !entry.retired)
+            .count(),
+    );
     for name in [
         "theme",
         "outputStyle",
         "autoUpdatesChannel",
         "sandbox.enabled",
-        "keybindingFlavor",
     ] {
         let field = app
             .rows()
@@ -646,7 +651,10 @@ fn claude_settings_are_grouped_parent_first_and_codex_stays_flat() {
     );
     assert_eq!(
         rows.iter().filter(|field| !field.group).count(),
-        crate::catalog::entries(Provider::Claude).len()
+        crate::catalog::entries(Provider::Claude)
+            .iter()
+            .filter(|entry| !entry.retired)
+            .count()
     );
 
     app.handle_key(key(KeyCode::Char(']')));
@@ -817,6 +825,141 @@ fn hierarchy_preserves_literal_dots_and_edits_the_selected_path() {
         result["permissions"]["allow"],
         serde_json::json!(["Read(*)"])
     );
+}
+
+#[test]
+fn retired_settings_are_hidden_unless_the_key_is_present() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    assert!(app.rows().iter().all(|field| !field.retired));
+    assert!(
+        !app.rows()
+            .iter()
+            .any(|field| field.key() == "keybindingFlavor")
+    );
+    assert!(
+        app.rows()
+            .iter()
+            .any(|field| field.key() == "includeCoAuthoredBy")
+    );
+    assert!(
+        app.rows()
+            .iter()
+            .any(|field| field.key() == "disableArtifact")
+    );
+    app.handle_key(key(KeyCode::Char(']')));
+    assert!(app.rows().iter().all(|field| !field.retired));
+    assert!(!app.rows().iter().any(|field| field.key() == "personality"));
+    for value in [
+        serde_json::json!(false),
+        serde_json::json!(null),
+        serde_json::json!(""),
+        serde_json::json!([]),
+        serde_json::json!({}),
+        serde_json::json!(0),
+    ] {
+        let original = serde_json::json!({"keybindingFlavor": value}).to_string();
+        let config = fixture.config(Provider::Claude, &original);
+        let field = fields::fields(&config)
+            .into_iter()
+            .find(|field| field.key() == "keybindingFlavor")
+            .unwrap();
+        assert!(field.retired);
+        assert!(field.value.is_some());
+        assert_eq!(config.text, original);
+        assert!(!config.dirty());
+    }
+}
+
+#[test]
+fn configured_retired_settings_precede_active_settings_and_keep_full_paths() {
+    let fixture = Fixture::new();
+    fixture.write(".claude/settings.json", r#"{"model":"opus","keybindingFlavor":"readline","permissionExplainerEnabled":false,"teammateDefaultModel":null,"taskOutputMaxChars":0}"#);
+    fixture.write(".codex/config.toml", "model = 'sample-model'\npersonality = ''\n[features]\npersonality = false\n[features.guardianv2]\nasync_classifier_mode = 'conversations'\nthread_context = false\n[features.multi_agent_v2]\nusage_hint_enabled = false\n");
+    let mut app = fixture.app();
+    for expected in [4, 5] {
+        let rows = app.rows();
+        assert!(
+            rows[..expected]
+                .iter()
+                .all(|field| field.retired && field.value.is_some())
+        );
+        assert!(rows[expected..].iter().all(|field| !field.retired));
+        assert_eq!(rows[expected].key(), "model");
+        assert!(app.current_field().unwrap().retired);
+        assert!(!app.config().unwrap().dirty());
+        if expected == 4 {
+            app.handle_key(key(KeyCode::Char(']')));
+        }
+    }
+    app.modal = Some(Modal::Search(Editor::new("async_classifier_mode")));
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.rows().len(), 1);
+    let field = app.current_field().unwrap();
+    assert_eq!(
+        field.path,
+        path(&["features", "guardianv2", "async_classifier_mode"])
+    );
+    assert!(field.retired);
+    assert!(field.tree_prefix.is_empty());
+}
+
+#[test]
+fn retired_rows_and_detail_keys_are_red_even_when_selected() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".claude/settings.json",
+        r#"{"keybindingFlavor":"readline"}"#,
+    );
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    let mut terminal = Terminal::new(TestBackend::new(180, 42)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let expected = ratatui::style::Color::Rgb(248, 134, 141);
+    let text = "keybindingFlavor";
+    let mut matches = 0;
+    for row in terminal.backend().buffer().content.chunks(180) {
+        for cells in row.windows(text.len()) {
+            if cells.iter().map(|cell| cell.symbol()).collect::<String>() == text {
+                assert!(cells.iter().all(|cell| cell.fg == expected));
+                if matches == 0 {
+                    let value = row
+                        .windows("readline".len())
+                        .find(|cells| {
+                            cells.iter().map(|cell| cell.symbol()).collect::<String>() == "readline"
+                        })
+                        .unwrap();
+                    assert!(value.iter().all(|cell| cell.fg == expected));
+                }
+                matches += 1;
+            }
+        }
+    }
+    assert!(
+        matches >= 2,
+        "the setting key must be red in both the table and detail"
+    );
+}
+
+#[test]
+fn resetting_a_retired_setting_hides_it_and_undo_restores_it() {
+    let fixture = Fixture::new();
+    let original = r#"{"keybindingFlavor":"readline","model":"opus"}"#;
+    let file = fixture.write(".claude/settings.json", original);
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    app.query = "keybindingFlavor".into();
+    app.handle_key(key(KeyCode::Char('d')));
+    assert!(matches!(app.modal, Some(Modal::Confirm { .. })));
+    app.handle_key(key(KeyCode::Enter));
+    assert!(app.rows().is_empty());
+    assert!(app.config().unwrap().dirty());
+    assert_eq!(fs::read_to_string(&file).unwrap(), original);
+    app.handle_key(key(KeyCode::Char('u')));
+    assert_eq!(app.rows().len(), 1);
+    assert!(app.current_field().unwrap().retired);
+    assert!(!app.config().unwrap().dirty());
+    assert_eq!(fs::read_to_string(&file).unwrap(), original);
 }
 
 #[test]

@@ -91,7 +91,35 @@ def metadata(key, type_name, scope, source):
         "default": "",
         "read_only": None,
         "initial": initial,
+        "retired": False,
     }
+
+
+def is_retired(text):
+    """Recognize explicit removal or unconditional no-effect notices.
+
+    Returns:
+        bool: Whether the setting has been removed or no longer has an effect.
+
+    """
+    text = re.sub(r"(?m)^\s*> ?", "", text).strip()
+    text = re.sub(r"^\[![A-Z]+\]\s*", "", text).strip()
+    introduction = plain(re.split(r"\n\s*\n", text, maxsplit=1)[0])
+    introduction = " ".join(introduction.split())
+    if re.match(r"(?:removed|retired)\b", introduction, re.IGNORECASE):
+        return True
+    if not re.match(r"deprecated\b", introduction, re.IGNORECASE):
+        return False
+    return bool(
+        re.search(
+            r"\bhas no effect\s*(?:[.;]|$)"
+            r"|\bdeprecated and ignored\s*(?:[.;]|$)"
+            r"|\bits value is ignored\s*(?:[.;]|$)"
+            r"|\bno longer select a style\s*(?:[.;]|$)",
+            introduction,
+            re.IGNORECASE,
+        )
+    )
 
 
 def claude_entries(text, models):
@@ -178,7 +206,8 @@ def claude_entries(text, models):
             entry["read_only"] = (
                 "この項目の適用範囲はユーザー設定ではありません。公式ページを確認してください。"
             )
-        if re.match(r"\s*Removed\b", body):
+        entry["retired"] = is_retired(body)
+        if entry["retired"]:
             entry["read_only"] = "公式リファレンスで廃止済みとされている設定です。"
         entries.append(entry)
 
@@ -286,8 +315,19 @@ def codex_entries(text, schema, models):
         )
         for key, type_name in rows
     }
+    descriptions = {
+        key: json.loads('"' + description + '"')
+        for key, _, description in re.findall(
+            r'\{\s*key:\s*"((?:\\.|[^"\\])*)",\s*'
+            r'type:\s*"((?:\\.|[^"\\])*)",\s*'
+            r'description:\s*"((?:\\.|[^"\\])*)",',
+            section,
+        )
+    }
+    schema_descriptions = {}
     for parts, node in schema_paths(schema, schema):
         key = ".".join(parts)
+        schema_descriptions[key] = node.get("description", "")
         if key not in entries:
             entries[key] = metadata(
                 key,
@@ -297,6 +337,14 @@ def codex_entries(text, schema, models):
             )
     for key, entry in entries.items():
         nodes = schema_at(key.split("."), schema)
+        entry["retired"] = (
+            is_retired(descriptions.get(key, ""))
+            or is_retired(schema_descriptions.get(key, ""))
+            or bool(nodes)
+            and all(is_retired(node.get("description", "")) for node in nodes)
+        )
+        if entry["retired"]:
+            entry["read_only"] = "公式リファレンスで廃止済みとされている設定です。"
         types = {str(node.get("type", "")) for node in nodes}
         enum = unique(
             value
@@ -359,6 +407,17 @@ def codex_entries(text, schema, models):
     return list(entries.values())
 
 
+def preserve_retired(catalog, previous):
+    """Keep confirmed removals when their reference entries disappear."""
+    for provider in ("claude", "codex"):
+        keys = {entry["key"] for entry in catalog[provider]}
+        catalog[provider].extend(
+            entry
+            for entry in previous.get(provider, [])
+            if entry.get("retired") is True and entry["key"] not in keys
+        )
+
+
 def main():
     """Refresh and validate the offline catalog snapshot."""
     parser = argparse.ArgumentParser(description=__doc__)
@@ -366,6 +425,12 @@ def main():
         "--source-dir", type=Path, help="Read cached sources named like claude-settings"
     )
     args = parser.parse_args()
+    destination = Path(__file__).resolve().parents[1] / "data/settings-catalog.json"
+    previous = (
+        json.loads(destination.read_text(encoding="utf-8"))
+        if destination.is_file()
+        else {}
+    )
     with tempfile.TemporaryDirectory(prefix="ai-config-catalog-") as directory:
         root = args.source_dir or Path(directory)
         if not args.source_dir:
@@ -422,7 +487,7 @@ def main():
             entry for entry in catalog["claude"] if entry["key"] == "outputStyle"
         )
         output_style.update(choices=styles, custom=True, kind="string")
-    destination = Path(__file__).resolve().parents[1] / "data/settings-catalog.json"
+    preserve_retired(catalog, previous)
     destination.parent.mkdir(exist_ok=True)
     destination.write_text(
         json.dumps(catalog, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"

@@ -24,6 +24,8 @@ pub struct Entry {
     pub default: String,
     pub read_only: Option<String>,
     pub initial: String,
+    #[serde(default)]
+    pub retired: bool,
 }
 
 #[derive(Deserialize)]

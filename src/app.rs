@@ -145,15 +145,22 @@ impl App {
         let Some(config) = self.config() else {
             return Vec::new();
         };
-        let fields = fields::fields(config);
-        if config.provider == Provider::Claude {
-            fields::hierarchy(fields, &self.query)
+        let (retired, active): (Vec<_>, Vec<_>) = fields::fields(config)
+            .into_iter()
+            .partition(|field| field.retired);
+        let active = if config.provider == Provider::Claude {
+            fields::hierarchy(active, &self.query)
         } else {
-            fields
+            active
                 .into_iter()
                 .filter(|field| field.matches_query(&self.query))
                 .collect()
-        }
+        };
+        retired
+            .into_iter()
+            .filter(|field| field.matches_query(&self.query))
+            .chain(active)
+            .collect()
     }
     pub fn current_field(&self) -> Option<Field> {
         self.rows()

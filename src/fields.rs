@@ -34,6 +34,7 @@ pub struct Field {
     pub template: bool,
     pub group: bool,
     pub tree_prefix: String,
+    pub retired: bool,
 }
 
 impl Field {
@@ -245,6 +246,7 @@ pub fn fields(config: &Config) -> Vec<Field> {
         field.default_value = entry.default.clone();
         field.read_only = entry.read_only.clone();
         field.initial = entry.initial.clone();
+        field.retired = entry.retired;
         field.template = entry.key.contains(['<', '*']);
     }
     if let Some(parsed) = &config.parsed {
@@ -285,6 +287,7 @@ pub fn fields(config: &Config) -> Vec<Field> {
             }
         }
     }
+    fields.retain(|field| !field.retired || field.value.is_some());
     fields
 }
 
@@ -307,6 +310,7 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         template: false,
         group: false,
         tree_prefix: String::new(),
+        retired: false,
     }
 }
 
@@ -333,6 +337,7 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         template: false,
         group: false,
         tree_prefix: String::new(),
+        retired: false,
     }
 }
 
