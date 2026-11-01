@@ -68,7 +68,8 @@ fn main() -> Result<()> {
     if let Some(Command::Profile { command }) = cli.command {
         match command {
             ProfileCommand::List => {
-                for profile in &profiles.items {
+                for index in profiles.display_order() {
+                    let profile = &profiles.items[index];
                     println!(
                         "{}\t{}\t{}",
                         profile.name,

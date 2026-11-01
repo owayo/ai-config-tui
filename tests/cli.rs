@@ -37,6 +37,29 @@ fn cli_registers_and_removes_profiles_without_touching_their_configuration() {
     assert!(listed.status.success());
     assert!(String::from_utf8_lossy(&listed.stdout).contains("Work\tCodex"));
     assert!(
+        run(&[
+            "profile",
+            "add",
+            "--name",
+            "Home",
+            "--provider",
+            "claude",
+            "--directory",
+            directory.path().join("claude-profile").to_str().unwrap()
+        ])
+        .status
+        .success()
+    );
+    let grouped = run(&["profile", "list"]);
+    let grouped = String::from_utf8_lossy(&grouped.stdout);
+    assert_eq!(
+        grouped
+            .lines()
+            .map(|line| line.split('\t').nth(1).unwrap())
+            .collect::<Vec<_>>(),
+        vec!["Claude Code", "Claude Code", "Codex", "Codex"]
+    );
+    assert!(
         run(&["profile", "set-provider", "Work", "--provider", "claude"])
             .status
             .success()

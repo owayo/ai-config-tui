@@ -773,3 +773,192 @@ fn changing_a_stored_provider_preserves_settings_and_creates_a_registry_backup()
     assert!(backups.contains(&before));
     assert!(profiles.set_provider(0, Provider::Codex).is_err());
 }
+
+#[test]
+fn profile_display_order_groups_providers_and_keeps_registration_order() {
+    let fixture = Fixture::new();
+    let mut profiles = fixture.profiles();
+    for (name, provider, directory) in [
+        ("CodexWork", Provider::Codex, "codex-work"),
+        ("ClaudeWork", Provider::Claude, "claude-work"),
+        ("ClaudeHome", Provider::Claude, "claude-home"),
+    ] {
+        profiles
+            .add(name.into(), provider, fixture.path(directory))
+            .unwrap();
+    }
+    let registered = fs::read(fixture.path("registry/profiles.toml")).unwrap();
+    assert_eq!(profiles.display_order(), vec![0, 3, 4, 1, 2]);
+    assert_eq!(profiles.items[0].name, "Claude · Default");
+    assert_eq!(profiles.items[1].name, "Codex · Default");
+    assert_eq!(profiles.items[2].name, "CodexWork");
+    assert_eq!(
+        fs::read(fixture.path("registry/profiles.toml")).unwrap(),
+        registered
+    );
+
+    let mut app = App::new(
+        profiles,
+        fixture.directory.path().to_owned(),
+        Some("Codex · Default"),
+    )
+    .unwrap();
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.profile_state.selected(), Some(3));
+    let mut terminal = Terminal::new(TestBackend::new(160, 40)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let text = terminal
+        .backend()
+        .buffer()
+        .content
+        .iter()
+        .map(|cell| cell.symbol())
+        .collect::<String>();
+    let positions = [
+        "Claude · Default",
+        "ClaudeWork",
+        "ClaudeHome",
+        "Codex · Default",
+        "CodexWork",
+    ]
+    .map(|name| text.find(name).unwrap());
+    assert!(positions.windows(2).all(|pair| pair[0] < pair[1]));
+}
+
+#[test]
+fn profile_navigation_follows_the_grouped_order_and_preserves_drafts() {
+    let fixture = Fixture::new();
+    fixture.write("claude-work/settings.json", "{\"model\":\"sonnet\"}");
+    let mut profiles = fixture.profiles();
+    profiles
+        .add(
+            "ClaudeWork".into(),
+            Provider::Claude,
+            fixture.path("claude-work"),
+        )
+        .unwrap();
+    profiles
+        .add(
+            "CodexWork".into(),
+            Provider::Codex,
+            fixture.path("codex-work"),
+        )
+        .unwrap();
+    let mut app = App::new(profiles, fixture.directory.path().to_owned(), None).unwrap();
+    app.handle_key(key(KeyCode::Char(']')));
+    assert_eq!(app.selected, 2);
+    assert_eq!(app.profile_state.selected(), Some(1));
+    assert_eq!(app.profiles.items[app.selected].name, "ClaudeWork");
+    app.config_mut()
+        .unwrap()
+        .set(&path(&["model"]), "opus", true)
+        .unwrap();
+    app.handle_key(key(KeyCode::Char(']')));
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.profile_state.selected(), Some(2));
+    assert_eq!(app.config().unwrap().provider, Provider::Codex);
+    app.handle_key(key(KeyCode::Char('[')));
+    assert!(app.config().unwrap().text.contains("opus"));
+    assert!(app.config().unwrap().dirty());
+    assert_eq!(
+        fs::read_to_string(fixture.path("claude-work/settings.json")).unwrap(),
+        "{\"model\":\"sonnet\"}"
+    );
+    app.handle_key(key(KeyCode::Left));
+    app.handle_key(key(KeyCode::Down));
+    assert_eq!(app.selected, 1);
+    app.handle_key(key(KeyCode::Up));
+    assert_eq!(app.selected, 2);
+    app.handle_key(key(KeyCode::PageDown));
+    assert_eq!(app.selected, 3);
+    assert_eq!(app.profile_state.selected(), Some(3));
+    app.handle_key(key(KeyCode::PageUp));
+    assert_eq!(app.selected, 0);
+    assert_eq!(app.dirty_count(), 1);
+}
+
+#[test]
+fn adding_a_claude_profile_selects_its_grouped_position_without_moving_drafts() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    app.config_mut()
+        .unwrap()
+        .set(&path(&["model"]), "custom-codex-model", true)
+        .unwrap();
+    app.handle_key(key(KeyCode::Char('a')));
+    let Some(Modal::Add {
+        provider,
+        name,
+        directory,
+        ..
+    }) = &mut app.modal
+    else {
+        panic!()
+    };
+    *provider = Some(Provider::Claude);
+    *name = Editor::new("ClaudeWork");
+    *directory = Editor::new(fixture.path("claude-work").to_str().unwrap());
+    app.handle_key(control('s'));
+    assert_eq!(app.selected, 2);
+    assert_eq!(app.profile_state.selected(), Some(1));
+    assert_eq!(app.config().unwrap().provider, Provider::Claude);
+    app.handle_key(key(KeyCode::Char(']')));
+    assert_eq!(app.selected, 1);
+    assert_eq!(app.config().unwrap().provider, Provider::Codex);
+    assert!(app.config().unwrap().text.contains("custom-codex-model"));
+    assert_eq!(app.dirty_count(), 1);
+}
+
+#[test]
+fn removing_a_grouped_profile_keeps_defaults_protected_and_documents_aligned() {
+    let fixture = Fixture::new();
+    let mut profiles = fixture.profiles();
+    profiles
+        .add(
+            "ClaudeWork".into(),
+            Provider::Claude,
+            fixture.path("claude-work"),
+        )
+        .unwrap();
+    profiles
+        .add(
+            "CodexWork".into(),
+            Provider::Codex,
+            fixture.path("codex-work"),
+        )
+        .unwrap();
+    let mut app = App::new(
+        profiles,
+        fixture.directory.path().to_owned(),
+        Some("CodexWork"),
+    )
+    .unwrap();
+    app.config_mut()
+        .unwrap()
+        .set(&path(&["model"]), "custom-model", true)
+        .unwrap();
+    app.handle_key(key(KeyCode::Char('[')));
+    app.handle_key(key(KeyCode::Char('[')));
+    assert_eq!(app.profiles.items[app.selected].name, "ClaudeWork");
+    assert_eq!(app.profile_state.selected(), Some(1));
+    app.handle_key(key(KeyCode::Left));
+    app.handle_key(key(KeyCode::Char('x')));
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.profiles.items[app.selected].name, "Codex · Default");
+    assert_eq!(app.profile_state.selected(), Some(1));
+    app.handle_key(key(KeyCode::Char('x')));
+    assert!(app.modal.is_none());
+    assert!(app.is_error);
+    app.handle_key(key(KeyCode::Down));
+    assert_eq!(app.profiles.items[app.selected].name, "CodexWork");
+    assert_eq!(app.config().unwrap().provider, Provider::Codex);
+    assert!(app.config().unwrap().text.contains("custom-model"));
+    assert!(
+        app.config()
+            .unwrap()
+            .snapshot
+            .path
+            .ends_with("codex-work/config.toml")
+    );
+}

@@ -106,13 +106,17 @@ impl App {
             0
         };
         let documents = profiles.items.iter().map(|_| Loaded::Pending).collect();
+        let display_selected = profiles
+            .display_order()
+            .iter()
+            .position(|&index| index == selected);
         let mut app = Self {
             profiles,
             documents,
             home,
             selected,
             focus: Focus::Settings,
-            profile_state: ListState::default().with_selected(Some(selected)),
+            profile_state: ListState::default().with_selected(display_selected),
             table_state: TableState::default().with_selected(Some(0)),
             query: String::new(),
             modal: None,
@@ -214,10 +218,8 @@ impl App {
             KeyCode::Down | KeyCode::Char('j') => self.navigate(1),
             KeyCode::PageUp => self.navigate(-10),
             KeyCode::PageDown => self.navigate(10),
-            KeyCode::Char('[') => self.select_profile(self.selected.saturating_sub(1)),
-            KeyCode::Char(']') => {
-                self.select_profile((self.selected + 1).min(self.profiles.items.len() - 1))
-            }
+            KeyCode::Char('[') => self.move_profile(-1),
+            KeyCode::Char(']') => self.move_profile(1),
             KeyCode::Enter | KeyCode::Char('e') if self.focus == Focus::Settings => {
                 self.edit_field()
             }
@@ -496,9 +498,11 @@ impl App {
             }
             Action::Reload => self.reload(),
             Action::RemoveProfile => {
+                let position = self.profile_state.selected().unwrap_or(0);
                 self.profiles.remove(self.selected)?;
                 self.documents.remove(self.selected);
-                self.select_profile(self.selected.min(self.profiles.items.len() - 1));
+                let order = self.profiles.display_order();
+                self.select_profile(order[position.min(order.len() - 1)]);
                 self.message("登録を解除しました（設定ファイルは保持されます）", false);
             }
             Action::Quit => self.quit = true,
@@ -662,11 +666,7 @@ impl App {
     }
     fn navigate(&mut self, offset: isize) {
         if self.focus == Focus::Profiles {
-            self.select_profile(
-                self.selected
-                    .saturating_add_signed(offset)
-                    .min(self.profiles.items.len() - 1),
-            );
+            self.move_profile(offset);
         } else {
             self.table_state.select(Some(
                 self.table_state
@@ -677,9 +677,23 @@ impl App {
             ));
         }
     }
+    fn move_profile(&mut self, offset: isize) {
+        let order = self.profiles.display_order();
+        let position = order
+            .iter()
+            .position(|&index| index == self.selected)
+            .unwrap_or(0);
+        let next = position.saturating_add_signed(offset).min(order.len() - 1);
+        self.select_profile(order[next]);
+    }
     fn select_profile(&mut self, index: usize) {
         self.selected = index;
-        self.profile_state.select(Some(index));
+        self.profile_state.select(
+            self.profiles
+                .display_order()
+                .iter()
+                .position(|&item| item == index),
+        );
         self.table_state.select(Some(0));
         self.query.clear();
         self.reveal = false;

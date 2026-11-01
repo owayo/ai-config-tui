@@ -106,10 +106,10 @@ fn panel(title: impl Into<String>, active: bool) -> Block<'static> {
 fn profiles(frame: &mut Frame, app: &mut App, area: Rect) {
     let items = app
         .profiles
-        .items
-        .iter()
-        .enumerate()
-        .map(|(index, profile)| {
+        .display_order()
+        .into_iter()
+        .map(|index| {
+            let profile = &app.profiles.items[index];
             let dirty = matches!(&app.documents[index], Loaded::Ready(config) if config.dirty());
             let color = if dirty { AMBER } else { TEXT };
             ListItem::new(vec![

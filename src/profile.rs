@@ -108,6 +108,15 @@ pub struct Profiles {
 }
 
 impl Profiles {
+    pub fn display_order(&self) -> Vec<usize> {
+        let mut order = (0..self.items.len()).collect::<Vec<_>>();
+        order.sort_by_key(|&index| match self.items[index].provider {
+            Provider::Claude => 0,
+            Provider::Codex => 1,
+        });
+        order
+    }
+
     pub fn load(path: PathBuf, home: &Path) -> Result<Self> {
         let state_dir = env::var_os("XDG_STATE_HOME")
             .filter(|value| !value.is_empty())
