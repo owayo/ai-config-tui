@@ -602,6 +602,224 @@ fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_f
 }
 
 #[test]
+fn claude_settings_are_grouped_parent_first_and_codex_stays_flat() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    let rows = app.rows();
+    let permissions = rows
+        .iter()
+        .position(|field| field.key() == "permissions")
+        .unwrap();
+    assert_eq!(rows[permissions + 1].key(), "permissions.defaultMode");
+    assert_eq!(rows[permissions + 2].key(), "permissions.allow");
+    assert!(rows[permissions].tree_prefix.is_empty());
+    assert!(rows[permissions + 1].tree_prefix.starts_with("├─ "));
+    for (index, field) in rows
+        .iter()
+        .enumerate()
+        .filter(|(_, field)| field.path.len() > 1)
+    {
+        let parent = &field.path[..field.path.len() - 1];
+        assert!(rows[..index].iter().any(|row| row.path == parent));
+        assert!(!field.tree_prefix.is_empty());
+    }
+    let sandbox = rows
+        .iter()
+        .position(|field| field.key() == "sandbox")
+        .unwrap();
+    let end = rows[sandbox + 1..]
+        .iter()
+        .position(|field| field.path.len() == 1)
+        .map_or(rows.len(), |offset| sandbox + 1 + offset);
+    assert!(
+        rows[sandbox + 1..end]
+            .iter()
+            .all(|field| field.path[0] == "sandbox")
+    );
+    let network = rows
+        .iter()
+        .position(|field| field.key() == "sandbox.network")
+        .unwrap();
+    assert!(rows[network + 1].path.starts_with(&rows[network].path));
+    assert!(
+        rows[network + 1].tree_prefix.chars().count() > rows[network].tree_prefix.chars().count()
+    );
+    assert_eq!(
+        rows.iter().filter(|field| !field.group).count(),
+        crate::catalog::entries(Provider::Claude).len()
+    );
+
+    app.handle_key(key(KeyCode::Char(']')));
+    assert!(
+        app.rows()
+            .iter()
+            .all(|field| !field.group && field.tree_prefix.is_empty())
+    );
+    assert!(!fixture.path(".claude").exists());
+    assert!(!fixture.path(".codex").exists());
+}
+
+#[test]
+fn hierarchy_search_keeps_ancestors_selects_the_match_and_renders_the_full_key() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    app.modal = Some(Modal::Search(Editor::new("接続許可ドメイン")));
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(
+        app.current_field().unwrap().key(),
+        "sandbox.network.allowedDomains"
+    );
+    let keys = app
+        .rows()
+        .iter()
+        .map(|field| field.key())
+        .collect::<Vec<_>>();
+    assert_eq!(
+        keys,
+        [
+            "sandbox",
+            "sandbox.network",
+            "sandbox.network.allowedDomains"
+        ]
+    );
+    assert_eq!(app.table_state.selected(), Some(2));
+    for (width, height) in [(60, 16), (180, 42)] {
+        let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+        terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+        if width == 180 {
+            let mut screen = String::new();
+            for row in terminal.backend().buffer().content.chunks(width as usize) {
+                let mut column = 0;
+                while column < row.len() {
+                    let symbol = row[column].symbol();
+                    screen.push_str(symbol);
+                    column += unicode_width::UnicodeWidthStr::width(symbol).max(1);
+                }
+                screen.push('\n');
+            }
+            assert!(screen.contains("└─ allowedDomains"), "{screen}");
+            assert!(
+                screen.contains("キー: sandbox.network.allowedDomains"),
+                "{screen}"
+            );
+        }
+    }
+    app.handle_key(key(KeyCode::Enter));
+    let Some(Modal::Edit {
+        path: Some(path), ..
+    }) = &app.modal
+    else {
+        panic!()
+    };
+    assert_eq!(path, &["sandbox", "network", "allowedDomains"]);
+    assert!(!app.config().unwrap().dirty());
+}
+
+#[test]
+fn hierarchy_search_matches_parent_names_and_handles_no_results() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    let label = app
+        .rows()
+        .into_iter()
+        .find(|field| field.key() == "sandbox.network")
+        .unwrap()
+        .label;
+    app.modal = Some(Modal::Search(Editor::new(&label)));
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.current_field().unwrap().key(), "sandbox.network");
+    assert!(
+        app.rows()
+            .iter()
+            .any(|field| field.key() == "sandbox.network.allowUnixSockets")
+    );
+    assert!(
+        app.rows()
+            .iter()
+            .any(|field| field.key() == "sandbox.network.allowedDomains")
+    );
+    app.modal = Some(Modal::Search(Editor::new("no-such-setting-example-001")));
+    app.handle_key(key(KeyCode::Enter));
+    assert!(app.rows().is_empty());
+    assert!(app.current_field().is_none());
+    app.handle_key(key(KeyCode::Enter));
+    assert!(app.modal.is_none());
+    assert!(!app.config().unwrap().dirty());
+}
+
+#[test]
+fn virtual_parent_groups_cannot_be_edited_toggled_or_reset() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".claude/settings.json",
+        r#"{"remote":{"defaultEnvironmentId":"example"}}"#,
+    );
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    let original = app.config().unwrap().text.clone();
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.path == path(&["remote"]))
+        .unwrap();
+    app.table_state.select(Some(index));
+    let field = app.current_field().unwrap();
+    assert!(field.group);
+    assert!(field.value.is_none());
+    assert!(field.disabled_reason().is_some());
+    for code in [KeyCode::Enter, KeyCode::Char(' '), KeyCode::Char('d')] {
+        app.handle_key(key(code));
+        assert!(app.modal.is_none());
+        assert_eq!(app.config().unwrap().text, original);
+        assert!(!app.config().unwrap().dirty());
+    }
+}
+
+#[test]
+fn hierarchy_preserves_literal_dots_and_edits_the_selected_path() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".claude/settings.json",
+        r#"{"permissions.allow":"literal","permissions":{"allow":["Read(*)"]}}"#,
+    );
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    let rows = app.rows();
+    let literal = rows
+        .iter()
+        .position(|field| field.path == path(&["permissions.allow"]))
+        .unwrap();
+    let nested = rows
+        .iter()
+        .position(|field| field.path == path(&["permissions", "allow"]))
+        .unwrap();
+    assert!(rows[literal].tree_prefix.is_empty());
+    assert!(!rows[nested].tree_prefix.is_empty());
+    assert!(!rows[literal].group);
+    app.table_state.select(Some(literal));
+    app.handle_key(key(KeyCode::Enter));
+    let Some(Modal::Edit {
+        editor,
+        path: Some(selected),
+        ..
+    }) = &mut app.modal
+    else {
+        panic!()
+    };
+    assert_eq!(selected, &path(&["permissions.allow"]));
+    *editor = Editor::new("updated");
+    app.handle_key(control('s'));
+    let result: serde_json::Value = serde_json::from_str(&app.config().unwrap().text).unwrap();
+    assert_eq!(result["permissions.allow"], "updated");
+    assert_eq!(
+        result["permissions"]["allow"],
+        serde_json::json!(["Read(*)"])
+    );
+}
+
+#[test]
 fn model_picker_stages_an_alias_and_cancel_preserves_the_existing_value() {
     let fixture = Fixture::new();
     let mut app = fixture.app();

@@ -142,18 +142,18 @@ impl App {
         }
     }
     pub fn rows(&self) -> Vec<Field> {
-        let query = self.query.to_lowercase();
-        self.config()
-            .map(fields::fields)
-            .unwrap_or_default()
-            .into_iter()
-            .filter(|field| {
-                query.is_empty()
-                    || format!("{} {} {}", field.key(), field.label, field.description)
-                        .to_lowercase()
-                        .contains(&query)
-            })
-            .collect()
+        let Some(config) = self.config() else {
+            return Vec::new();
+        };
+        let fields = fields::fields(config);
+        if config.provider == Provider::Claude {
+            fields::hierarchy(fields, &self.query)
+        } else {
+            fields
+                .into_iter()
+                .filter(|field| field.matches_query(&self.query))
+                .collect()
+        }
     }
     pub fn current_field(&self) -> Option<Field> {
         self.rows()
@@ -437,7 +437,12 @@ impl App {
                 }
                 if key.code == KeyCode::Enter {
                     self.query = editor.text();
-                    self.table_state.select(Some(0));
+                    let index = self
+                        .rows()
+                        .iter()
+                        .position(|field| !field.group && field.matches_query(&self.query))
+                        .unwrap_or(0);
+                    self.table_state.select(Some(index));
                     return;
                 }
                 editor.handle(key, false);

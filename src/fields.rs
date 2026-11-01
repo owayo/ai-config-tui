@@ -32,6 +32,8 @@ pub struct Field {
     pub read_only: Option<String>,
     pub initial: String,
     pub template: bool,
+    pub group: bool,
+    pub tree_prefix: String,
 }
 
 impl Field {
@@ -40,6 +42,12 @@ impl Field {
     }
     pub fn display_value(&self) -> String {
         self.value.as_deref().unwrap_or("未設定").replace('\n', " ")
+    }
+    pub fn matches_query(&self, query: &str) -> bool {
+        query.is_empty()
+            || format!("{} {} {}", self.key(), self.label, self.description)
+                .to_lowercase()
+                .contains(&query.to_lowercase())
     }
     pub fn disabled_reason(&self) -> Option<&str> {
         self.read_only.as_deref().or(if self.template {
@@ -297,6 +305,8 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         read_only: None,
         initial: String::new(),
         template: false,
+        group: false,
+        tree_prefix: String::new(),
     }
 }
 
@@ -321,6 +331,8 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         read_only: None,
         initial: String::new(),
         template: false,
+        group: false,
+        tree_prefix: String::new(),
     }
 }
 
@@ -433,4 +445,98 @@ fn append_extra(fields: &mut Vec<Field>, path: Vec<String>, text: String, kind: 
         extra(path, text, kind)
     };
     fields.push(field);
+}
+
+#[derive(Default)]
+struct SettingNode {
+    field: Option<Field>,
+    children: Vec<(String, SettingNode)>,
+}
+
+impl SettingNode {
+    fn insert(&mut self, field: Field) {
+        let mut node = self;
+        for component in &field.path {
+            let index = node
+                .children
+                .iter()
+                .position(|(name, _)| name == component)
+                .unwrap_or_else(|| {
+                    node.children.push((component.clone(), Self::default()));
+                    node.children.len() - 1
+                });
+            node = &mut node.children[index].1;
+        }
+        node.field = Some(field);
+    }
+
+    fn retain_matches(&mut self, query: &str) -> bool {
+        // A matching parent includes its children. A matching child keeps its
+        // ancestors, including the real parent field and its editing metadata.
+        if self
+            .field
+            .as_ref()
+            .is_some_and(|field| field.matches_query(query))
+        {
+            return true;
+        }
+        self.children
+            .retain_mut(|(_, child)| child.retain_matches(query));
+        !self.children.is_empty()
+    }
+}
+
+pub fn hierarchy(fields: Vec<Field>, query: &str) -> Vec<Field> {
+    let mut root = SettingNode::default();
+    for field in fields {
+        root.insert(field);
+    }
+    root.children
+        .retain_mut(|(_, node)| node.retain_matches(query));
+    let mut rows = Vec::new();
+    flatten_tree(root.children, &mut Vec::new(), "", &mut rows);
+    rows
+}
+
+fn flatten_tree(
+    nodes: Vec<(String, SettingNode)>,
+    path: &mut Vec<String>,
+    indent: &str,
+    rows: &mut Vec<Field>,
+) {
+    let count = nodes.len();
+    for (index, (name, node)) in nodes.into_iter().enumerate() {
+        path.push(name);
+        let last = index + 1 == count;
+        let root = path.len() == 1;
+        let mut field = node.field.unwrap_or_else(|| {
+            let key = path.join(".");
+            let (label, _) = catalog::help(Provider::Claude, &key);
+            let mut group = preset(
+                &key,
+                &label,
+                "関連する設定をまとめた表示用のグループです。子項目を選択して編集してください。",
+                Kind::Document,
+                "",
+            );
+            group.path = path.clone();
+            group.group = true;
+            group.read_only =
+                Some("表示用のグループです。子項目を選択して編集してください。".into());
+            group
+        });
+        field.tree_prefix = if root {
+            String::new()
+        } else {
+            format!("{indent}{}", if last { "└─ " } else { "├─ " })
+        };
+        rows.push(field);
+        let child_indent = if root {
+            String::new()
+        } else {
+            format!("{indent}{}", if last { "   " } else { "│  " })
+        };
+        flatten_tree(node.children, path, &child_indent, rows);
+        path.pop();
+    }
 }

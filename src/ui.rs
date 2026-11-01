@@ -175,21 +175,36 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     };
     let rows = app.rows();
     let table_rows = rows.iter().map(|field| {
-        let value = if !app.reveal && secret(&field.key()) && field.value.is_some() {
+        let value = if field.group {
+            String::new()
+        } else if !app.reveal && secret(&field.key()) && field.value.is_some() {
             "[hidden]".into()
         } else {
             safe(&field.display_value())
         };
-        let key = if field.common {
-            field.key()
+        let name = if profile.provider == Provider::Claude {
+            format!(
+                "{}{}",
+                field.tree_prefix,
+                safe(field.path.last().map(String::as_str).unwrap_or_default())
+            )
         } else {
-            format!("{} +", field.key())
+            safe(&field.key())
         };
+        let key = if field.common {
+            name
+        } else {
+            format!("{name} +")
+        };
+        let label_indent = field
+            .tree_prefix
+            .replace("├─ ", "│  ")
+            .replace("└─ ", "   ");
         Row::new(vec![
             Cell::from(Text::from(vec![
                 Line::from(key),
                 Line::from(Span::styled(
-                    field.label.clone(),
+                    format!("{label_indent}{}", safe(&field.label)),
                     Style::default().fg(MUTED),
                 )),
             ])),
@@ -201,15 +216,16 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         ])
         .height(2)
     });
+    let setting_count = rows.iter().filter(|field| !field.group).count();
     let title = if app.query.is_empty() {
         format!(
             "{} · {} · {}項目",
             profile.provider.label(),
             profile.provider.format(),
-            rows.len()
+            setting_count
         )
     } else {
-        format!("検索: {} · {}件", safe(&app.query), rows.len())
+        format!("検索: {} · {}件", safe(&app.query), setting_count)
     };
     let table = Table::new(
         table_rows,
@@ -237,54 +253,64 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
             field.label.clone(),
             Style::default().fg(ACCENT).add_modifier(Modifier::BOLD),
         )));
+        detail.push(Line::from(Span::styled(
+            format!(
+                "{}: {}",
+                if field.group { "階層" } else { "キー" },
+                safe(&field.key())
+            ),
+            Style::default().fg(MUTED),
+        )));
         detail.push(Line::from(safe(&field.description)));
         detail.push(Line::from(""));
-        detail.push(Line::from(Span::styled(
-            match field.kind {
-                Kind::String => "文字列 · 引用符不要",
-                Kind::Bool => "真偽値 · Spaceで切替",
-                Kind::Raw => "構造化された値 · Enterで編集",
-                Kind::Document => "全体編集で変更",
-            },
-            Style::default().fg(AMBER),
-        )));
-        if !field.suggestions.is_empty() {
-            detail.push(Line::from(safe(&field.suggestions)));
-        }
-        if !field.choices.is_empty() {
+        if !field.group {
             detail.push(Line::from(Span::styled(
-                "Enter: 候補から選択",
-                Style::default().fg(ACCENT),
-            )));
-        }
-        if let Some(reason) = field.disabled_reason() {
-            detail.push(Line::from(Span::styled(
-                safe(reason),
+                match field.kind {
+                    Kind::String => "文字列 · 引用符不要",
+                    Kind::Bool => "真偽値 · Spaceで切替",
+                    Kind::Raw => "構造化された値 · Enterで編集",
+                    Kind::Document => "全体編集で変更",
+                },
                 Style::default().fg(AMBER),
             )));
-        }
-        detail.push(Line::from(""));
-        let text = if !app.reveal && secret(&field.path.join(".")) {
-            "[hidden] · hで表示".into()
-        } else {
-            field
-                .value
-                .unwrap_or_else(|| "未設定 · ファイルには書き込みません".into())
-        };
-        detail.extend(safe(&text).lines().map(|line| Line::from(line.to_owned())));
-        if !field.default_value.is_empty() {
-            detail.push(Line::from(format!(
-                "公式の既定値: {}",
-                safe(&field.default_value)
-            )));
-        }
-        if !field.source.is_empty() {
-            detail.push(Line::from(format!("適用範囲: {}", safe(&field.scope))));
-            detail.push(Line::from(format!("参照日: {}", CATALOG.verified_at)));
-            detail.push(Line::from(Span::styled(
-                safe(&field.source),
-                Style::default().fg(MUTED),
-            )));
+            if !field.suggestions.is_empty() {
+                detail.push(Line::from(safe(&field.suggestions)));
+            }
+            if !field.choices.is_empty() {
+                detail.push(Line::from(Span::styled(
+                    "Enter: 候補から選択",
+                    Style::default().fg(ACCENT),
+                )));
+            }
+            if let Some(reason) = field.disabled_reason() {
+                detail.push(Line::from(Span::styled(
+                    safe(reason),
+                    Style::default().fg(AMBER),
+                )));
+            }
+            detail.push(Line::from(""));
+            let text = if !app.reveal && secret(&field.path.join(".")) {
+                "[hidden] · hで表示".into()
+            } else {
+                field
+                    .value
+                    .unwrap_or_else(|| "未設定 · ファイルには書き込みません".into())
+            };
+            detail.extend(safe(&text).lines().map(|line| Line::from(line.to_owned())));
+            if !field.default_value.is_empty() {
+                detail.push(Line::from(format!(
+                    "公式の既定値: {}",
+                    safe(&field.default_value)
+                )));
+            }
+            if !field.source.is_empty() {
+                detail.push(Line::from(format!("適用範囲: {}", safe(&field.scope))));
+                detail.push(Line::from(format!("参照日: {}", CATALOG.verified_at)));
+                detail.push(Line::from(Span::styled(
+                    safe(&field.source),
+                    Style::default().fg(MUTED),
+                )));
+            }
         }
     } else {
         detail.push(Line::from("該当する設定がありません。Escで検索を解除。"));

@@ -59,6 +59,18 @@ make uninstall INSTALL_PATH="$HOME/.local/bin"
 
 設定キーと日本語の設定名を併記し、確認できた項目には用途の説明を表示します。キー・設定名・説明のどれでも検索できます。日本語の名前と説明は本ツールで付けたもので、[data/settings-help.ja.json](data/settings-help.ja.json)で管理します。専用の名前がない項目は階層名と読みやすく区切ったキーを使い、説明を推測で補いません。
 
+Claude Codeの設定は親の下に子をまとめた階層表示です。たとえば次のように表示し、詳細欄には完全なキーを示します。検索時も一致する子の親を表示します。表示用の中間グループは編集できず、値を持つ設定はこれまでどおり編集できます。
+
+```text
+permissions
+├─ defaultMode
+├─ allow
+└─ deny
+sandbox
+└─ network
+   └─ allowedDomains
+```
+
 管理者専用、別ファイル向け、廃止済みの設定は参照表示です。名前が可変の項目は`<name>`などのテンプレートで表示し、設定済みの項目は具体名でも表示します。新しい名前の定義には`E`の全体編集を使えます。
 
 一覧の更新は`make catalog`です。Python 3.11以降とcurlで公式資料を取得し、キー・型・選択肢・適用範囲と取得元のSHA-256を[data/settings-catalog.json](data/settings-catalog.json)へ保存します。通常の起動・ビルドでは同梱データを使います。
