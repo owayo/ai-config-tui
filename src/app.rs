@@ -11,6 +11,7 @@ use ratatui::{
 };
 
 use crate::{
+    catalog::{self, ChoiceHelp},
     document::Config,
     editor::Editor,
     fields::{self, Field, Kind},
@@ -34,6 +35,7 @@ pub enum Modal {
         field: Box<Field>,
         options: Vec<PickOption>,
         state: ListState,
+        scroll: u16,
         error: Option<String>,
     },
     Edit {
@@ -61,6 +63,7 @@ pub enum Modal {
 pub struct PickOption {
     pub label: String,
     pub value: PickValue,
+    pub help: ChoiceHelp,
 }
 
 pub enum PickValue {
@@ -294,6 +297,7 @@ impl App {
                 field,
                 options,
                 state,
+                scroll,
                 error,
             } => {
                 if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
@@ -301,6 +305,12 @@ impl App {
                 }
                 let index = state.selected().unwrap_or(0);
                 match key.code {
+                    KeyCode::Up if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        *scroll = scroll.saturating_sub(1);
+                    }
+                    KeyCode::Down if key.modifiers.contains(KeyModifiers::CONTROL) => {
+                        *scroll = scroll.saturating_add(1);
+                    }
                     KeyCode::Up | KeyCode::Char('k') => state.select(Some(index.saturating_sub(1))),
                     KeyCode::Down | KeyCode::Char('j') => {
                         state.select(Some((index + 1).min(options.len() - 1)))
@@ -322,6 +332,11 @@ impl App {
                             let result = if let Some(config) = self.config_mut() {
                                 match value {
                                     PickValue::Unset => config.remove(&field.path),
+                                    PickValue::Value(value)
+                                        if config.matches_choice(&field.path, value) =>
+                                    {
+                                        Ok(())
+                                    }
                                     PickValue::Value(value) => {
                                         let input = value
                                             .as_str()
@@ -348,6 +363,9 @@ impl App {
                         }
                     },
                     _ => {}
+                }
+                if state.selected() != Some(index) {
+                    *scroll = 0;
                 }
             }
             Modal::Edit {
@@ -544,6 +562,9 @@ impl App {
             let mut options = vec![PickOption {
                 label: "未設定（このキーを削除）".into(),
                 value: PickValue::Unset,
+                help: ChoiceHelp::local(
+                    "このファイルからキーを削除します。他の設定ファイルや実行時の既定値が使われる場合があります。既定値そのものは書き込みません。",
+                ),
             }];
             let mut selected = 0;
             for value in &field.choices {
@@ -551,12 +572,23 @@ impl App {
                     .as_str()
                     .map(String::from)
                     .unwrap_or_else(|| value.to_string());
-                if field.value.as_deref() == Some(&label) {
+                if self
+                    .config()
+                    .is_some_and(|config| config.matches_choice(&field.path, value))
+                {
                     selected = options.len();
                 }
                 options.push(PickOption {
                     label,
                     value: PickValue::Value(value.clone()),
+                    help: catalog::choice_help(
+                        self.profiles.items[self.selected].provider,
+                        &field.path,
+                        value,
+                    )
+                    .unwrap_or_else(|| {
+                        ChoiceHelp::local("この候補の説明はまだ登録されていません。")
+                    }),
                 });
             }
             if field.value.is_some() && selected == 0 {
@@ -565,18 +597,25 @@ impl App {
                 options.push(PickOption {
                     label: format!("現在の値: {current}（候補外）"),
                     value: PickValue::Keep,
+                    help: ChoiceHelp::local(
+                        "候補一覧にない現在の値をそのまま保持します。値の型・引用符・コメントを変更しません。",
+                    ),
                 });
             }
             if field.custom {
                 options.push(PickOption {
                     label: "任意の値を入力…".into(),
                     value: PickValue::Custom,
+                    help: ChoiceHelp::local(
+                        "モデルIDや独自の値を編集画面で入力します。利用できる値は契約・CLI・プロバイダーによって異なります。",
+                    ),
                 });
             }
             self.modal = Some(Modal::Select {
                 field: Box::new(field),
                 options,
                 state: ListState::default().with_selected(Some(selected)),
+                scroll: 0,
                 error: None,
             });
             return;

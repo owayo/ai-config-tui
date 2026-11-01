@@ -48,6 +48,33 @@ impl Config {
         self.text != self.original
     }
 
+    pub fn matches_choice(&self, path: &[String], value: &Json) -> bool {
+        match &self.parsed {
+            Some(Parsed::Json(root)) => {
+                path.iter().try_fold(root, |item, key| item.get(key)) == Some(value)
+            }
+            Some(Parsed::Toml(root)) => {
+                let Some(item) = path
+                    .iter()
+                    .try_fold(root.as_item(), |item, key| item.get(key))
+                else {
+                    return false;
+                };
+                match value {
+                    Json::String(value) => item.as_str() == Some(value),
+                    Json::Bool(value) => item.as_bool() == Some(*value),
+                    Json::Number(value) if value.is_f64() => item.as_float() == value.as_f64(),
+                    Json::Number(value) => {
+                        item.as_integer().is_some_and(|n| Some(n) == value.as_i64())
+                    }
+                    // TOML dates, tables and arrays stay opaque to the scalar picker.
+                    _ => false,
+                }
+            }
+            None => false,
+        }
+    }
+
     pub fn replace(&mut self, text: String) -> Result<()> {
         let parsed = parse(self.provider, &text)?;
         if text == self.text {

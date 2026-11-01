@@ -67,6 +67,253 @@ fn path(parts: &[&str]) -> Vec<String> {
 fn key(code: KeyCode) -> KeyEvent {
     KeyEvent::new(code, KeyModifiers::NONE)
 }
+
+fn screen_text(terminal: &Terminal<TestBackend>) -> String {
+    let buffer = terminal.backend().buffer();
+    let mut text = String::new();
+    for row in buffer.content.chunks(buffer.area.width as usize) {
+        let mut column = 0;
+        while column < row.len() {
+            let symbol = row[column].symbol();
+            text.push_str(symbol);
+            column += unicode_width::UnicodeWidthStr::width(symbol).max(1);
+        }
+        text.push('\n');
+    }
+    text
+}
+
+#[test]
+fn web_search_picker_explains_modes_scrolls_and_saves_only_the_chosen_value() {
+    let fixture = Fixture::new();
+    let original = "web_search = 'cached' # keep this comment\n";
+    let file = fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "web_search");
+    let mut terminal = Terminal::new(TestBackend::new(60, 16)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let cached = screen_text(&terminal);
+    assert!(cached.contains("OpenAIが管理"), "{cached}");
+    app.handle_key(key(KeyCode::End));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let live = screen_text(&terminal);
+    assert!(live.contains("live"), "{live}");
+    assert!(live.contains("Webから最新"), "{live}");
+    assert_eq!(app.config().unwrap().text, original);
+    assert_eq!(app.dirty_count(), 0);
+    for _ in 0..30 {
+        app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::CONTROL));
+        terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    }
+    let source = screen_text(&terminal);
+    assert!(
+        source.contains("learn.chatgpt.com/docs/web-search"),
+        "{source}"
+    );
+    let Some(Modal::Select { options, state, .. }) = &app.modal else {
+        panic!()
+    };
+    assert_eq!(options[state.selected().unwrap()].label, "live");
+    app.handle_key(key(KeyCode::Up));
+    let Some(Modal::Select { scroll, .. }) = &app.modal else {
+        panic!()
+    };
+    assert_eq!(*scroll, 0);
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(screen_text(&terminal).contains("検索索引を通じて"));
+    choose(&mut app, "live");
+    assert_eq!(fs::read_to_string(&file).unwrap(), original);
+    assert!(app.config().unwrap().dirty());
+    app.handle_key(control('s'));
+    app.handle_key(key(KeyCode::Enter));
+    let saved = fs::read_to_string(file).unwrap();
+    let Parsed::Toml(document) = parse(Provider::Codex, &saved).unwrap() else {
+        panic!()
+    };
+    assert_eq!(document["web_search"].as_str(), Some("live"));
+    assert!(saved.contains("# keep this comment"));
+}
+
+#[test]
+fn choice_help_uses_provider_path_and_json_type_and_keeps_literal_dots() {
+    use crate::catalog::choice_help;
+    use serde_json::json;
+
+    let history = choice_help(
+        Provider::Codex,
+        &path(&["history", "persistence"]),
+        &json!("none"),
+    )
+    .unwrap();
+    let opener = choice_help(Provider::Codex, &path(&["file_opener"]), &json!("none")).unwrap();
+    assert!(history.description.contains("history.jsonl"));
+    assert!(opener.description.contains("URI"));
+    assert_ne!(history.description, opener.description);
+    let browser = path(&["browser_use", "allow_history_access"]);
+    assert!(choice_help(Provider::Codex, &browser, &json!(false)).is_some());
+    assert!(choice_help(Provider::Codex, &browser, &json!("false")).is_none());
+    assert!(choice_help(Provider::Claude, &browser, &json!(false)).is_none());
+    assert!(
+        choice_help(
+            Provider::Codex,
+            &path(&["web_search"]),
+            &json!("future-mode")
+        )
+        .is_none()
+    );
+    let project = path(&["projects", "/tmp/work.space", "trust_level"]);
+    assert!(choice_help(Provider::Codex, &project, &json!("trusted")).is_some());
+    let wrong_path = path(&["projects", "/tmp/work", "space", "trust_level"]);
+    assert!(choice_help(Provider::Codex, &wrong_path, &json!("trusted")).is_none());
+}
+
+#[test]
+fn picker_operations_and_unexplained_values_do_not_claim_official_help() {
+    let fixture = Fixture::new();
+    let original = "[tui]\nnotifications = ['agent-turn-complete'] # keep\n";
+    fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "tui.notifications");
+    let Some(Modal::Select { options, state, .. }) = &app.modal else {
+        panic!()
+    };
+    let current = &options[state.selected().unwrap()];
+    assert!(current.help.description.contains("そのまま保持"));
+    assert!(current.help.source.is_empty());
+    let unset = &options[0];
+    assert!(unset.help.description.contains("キーを削除"));
+    let unexplained = options
+        .iter()
+        .find(|option| option.label == "false")
+        .unwrap();
+    assert!(unexplained.help.description.contains("まだ登録"));
+    assert!(unexplained.help.source.is_empty());
+    app.handle_key(key(KeyCode::Esc));
+    assert_eq!(app.config().unwrap().text, original);
+    assert_eq!(app.dirty_count(), 0);
+    app.handle_key(key(KeyCode::Char('[')));
+    select_field(&mut app, "model");
+    let Some(Modal::Select { options, .. }) = &app.modal else {
+        panic!()
+    };
+    let custom = options.last().unwrap();
+    assert!(custom.help.description.contains("編集画面で入力"));
+    assert!(custom.help.source.is_empty());
+    assert!(
+        options
+            .iter()
+            .find(|option| option.label == "opus")
+            .unwrap()
+            .help
+            .source
+            .starts_with("https://code.claude.com/")
+    );
+}
+
+#[test]
+fn curated_choice_explanations_match_catalog_values_and_have_official_sources() {
+    use std::collections::HashSet;
+
+    let help: serde_json::Value =
+        serde_json::from_str(include_str!("../data/choice-help.ja.json")).unwrap();
+    assert!(!help["verified_at"].as_str().unwrap().is_empty());
+    for (name, provider, source_prefix) in [
+        ("claude", Provider::Claude, "https://code.claude.com/"),
+        ("codex", Provider::Codex, "https://learn.chatgpt.com/"),
+    ] {
+        let mut seen = HashSet::new();
+        for group in help[name].as_array().unwrap() {
+            assert!(group["source"].as_str().unwrap().starts_with(source_prefix));
+            for key in group["keys"].as_array().unwrap() {
+                let key = key.as_str().unwrap();
+                let entry = crate::catalog::entries(provider)
+                    .iter()
+                    .find(|entry| entry.key == key)
+                    .unwrap_or_else(|| panic!("{name}: {key}"));
+                for choice in group["choices"].as_array().unwrap() {
+                    assert!(
+                        entry.choices.contains(&choice["value"]),
+                        "{name}: {key}: {choice}"
+                    );
+                    assert!(!choice["description"].as_str().unwrap().trim().is_empty());
+                    assert!(
+                        seen.insert((key, choice["value"].to_string())),
+                        "duplicate: {key}"
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn incorrectly_typed_current_values_keep_their_own_option_and_are_not_explained_as_booleans() {
+    let fixture = Fixture::new();
+    let original = "[browser_use]\nallow_history_access = 'false' # preserve\n";
+    fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "browser_use.allow_history_access");
+    let Some(Modal::Select { options, state, .. }) = &app.modal else {
+        panic!()
+    };
+    let current = &options[state.selected().unwrap()];
+    assert!(current.label.contains("候補外"));
+    assert!(current.help.source.is_empty());
+    assert!(
+        options
+            .iter()
+            .find(|option| option.label == "false")
+            .unwrap()
+            .help
+            .description
+            .contains("履歴へのアクセスを制限")
+    );
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.config().unwrap().text, original);
+    assert_eq!(app.dirty_count(), 0);
+    select_field(&mut app, "browser_use.allow_history_access");
+    choose(&mut app, "false");
+    let Parsed::Toml(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+        panic!()
+    };
+    assert_eq!(
+        document["browser_use"]["allow_history_access"].as_bool(),
+        Some(false)
+    );
+    assert!(app.config().unwrap().dirty());
+}
+
+#[test]
+fn selecting_the_same_typed_value_keeps_json_and_toml_formatting_and_drafts() {
+    let fixture = Fixture::new();
+    let json = "{ \"model\": \"opus\", \"custom\": 7 }\n";
+    let toml = "web_search = 'cached' # keep formatting\n";
+    fixture.write(".claude/settings.json", json);
+    fixture.write(".codex/config.toml", toml);
+    let mut app = fixture.app();
+    select_field(&mut app, "model");
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.config().unwrap().text, json);
+    assert!(!app.config().unwrap().dirty());
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "web_search");
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.config().unwrap().text, toml);
+    assert!(!app.config().unwrap().dirty());
+    app.config_mut()
+        .unwrap()
+        .set(&path(&["custom"]), "true", false)
+        .unwrap();
+    let draft = app.config().unwrap().text.clone();
+    select_field(&mut app, "web_search");
+    app.handle_key(KeyEvent::new(KeyCode::Down, KeyModifiers::CONTROL));
+    app.handle_key(key(KeyCode::Esc));
+    assert_eq!(app.config().unwrap().text, draft);
+    assert!(app.config().unwrap().dirty());
+}
 fn control(character: char) -> KeyEvent {
     KeyEvent::new(KeyCode::Char(character), KeyModifiers::CONTROL)
 }

@@ -1,0 +1,180 @@
+{
+  "verified_at": "2026-11-01",
+  "claude": [
+    {
+      "keys": ["model"],
+      "source": "https://code.claude.com/docs/en/model-config#model-aliases",
+      "choices": [
+        {"value": "default", "description": "モデル指定を解除し、アカウントの実行時の既定モデルを使います。モデルの名前ではありません。"},
+        {"value": "best", "description": "Fableを利用できる環境ではfableと同じモデル、それ以外ではopusと同じモデルを使います。"},
+        {"value": "fable", "description": "特に難しい作業や長時間の作業向けのFableを使います。実際のモデルは接続先によって異なります。"},
+        {"value": "sonnet", "description": "日常的なコーディング向けのSonnetを使います。接続先やCLIの版によって解決されるモデルが異なります。"},
+        {"value": "opus", "description": "複雑な推論を伴う作業向けのOpusを使います。接続先やCLIの版によって解決されるモデルが異なります。"},
+        {"value": "haiku", "description": "単純な作業向けの高速で効率的なHaikuを使います。実際のモデルは接続先によって異なります。"},
+        {"value": "sonnet[1m]", "description": "Sonnetで100万トークンのコンテキストを指定します。元から100万に対応するモデルでは追加の効果はありません。"},
+        {"value": "opus[1m]", "description": "Opusで100万トークンのコンテキストを指定します。元から100万に対応するモデルでは追加の効果はありません。"},
+        {"value": "opusplan", "description": "計画モードではOpusを使い、実行時にはSonnetへ切り替えます。"}
+      ]
+    },
+    {
+      "keys": ["permissions.defaultMode"],
+      "source": "https://code.claude.com/docs/en/settings-reference#permissionsdefaultmode",
+      "choices": [
+        {"value": "default", "description": "読み取りは確認なしで実行し、それ以外は権限ルールに従って確認します。"},
+        {"value": "acceptEdits", "description": "ファイル編集やmkdir・mvなどの一般的なファイル操作も確認なしで許可します。"},
+        {"value": "plan", "description": "読み取りと計画を行い、計画を承認するまで編集を止めます。"},
+        {"value": "auto", "description": "定型の確認を省き、コマンドやネットワーク要求などは実行前に分類器が依頼との整合を調べます。ユーザー設定で指定します。"},
+        {"value": "dontAsk", "description": "確認が必要な操作を自動拒否します。承認不要・許可済みの操作は実行でき、導入済みのmodが一部を許可する場合もあります。"},
+        {"value": "bypassPermissions", "description": "操作ごとの権限確認を省略します。denyルールは引き続き有効です。ユーザー設定で指定します。"},
+        {"value": "manual", "description": "defaultの別名です。読み取りは確認なしで実行します。"}
+      ]
+    },
+    {
+      "keys": ["effortLevel"],
+      "source": "https://code.claude.com/docs/en/settings-reference#effortlevel",
+      "choices": [
+        {"value": "low", "description": "推論を最小限に抑えます。範囲が狭く、応答速度を優先する単純な作業向けです。対応レベルはモデルによって異なります。"},
+        {"value": "medium", "description": "推論の深さと引き換えにトークン消費を抑えます。費用を重視する作業向けです。対応レベルはモデルによって異なります。"},
+        {"value": "high", "description": "トークン消費と推論能力のバランスを取ります。対応レベルはモデルによって異なります。"},
+        {"value": "xhigh", "description": "より多くのトークンを使って深く推論します。対応レベルはモデルによって異なります。"}
+      ]
+    },
+    {
+      "keys": ["outputStyle"],
+      "source": "https://code.claude.com/docs/en/output-styles#built-in-output-styles",
+      "choices": [
+        {"value": "Proactive", "description": "日常的な判断は妥当な前提を置いて実装を進める応答スタイルです。ツールの権限モード自体は変わりません。"},
+        {"value": "Concise", "description": "結果から書き始め、前置きや逐次実況を省いて簡潔に答えます。作業や必要な説明の範囲を減らす指定ではありません。"},
+        {"value": "Explanatory", "description": "コードの選択理由などを短いInsight欄で説明します。コードベースの理解を深めたいときに使います。"},
+        {"value": "Learning", "description": "選択理由を説明し、一部の小さな実装を利用者に任せます。手を動かしながら学ぶ作業向けです。"}
+      ]
+    },
+    {
+      "keys": ["theme"],
+      "source": "https://code.claude.com/docs/en/settings-reference#theme",
+      "choices": [
+        {"value": "auto", "description": "端末の明るい背景・暗い背景に合わせてテーマを選びます。"},
+        {"value": "dark", "description": "暗い配色のテーマを使います。"},
+        {"value": "light", "description": "明るい配色のテーマを使います。"},
+        {"value": "dark-daltonized", "description": "色覚の違いに配慮した暗い配色を使います。"},
+        {"value": "light-daltonized", "description": "色覚の違いに配慮した明るい配色を使います。"},
+        {"value": "dark-ansi", "description": "端末のANSIカラーパレットだけを使う暗いテーマです。"},
+        {"value": "light-ansi", "description": "端末のANSIカラーパレットだけを使う明るいテーマです。"}
+      ]
+    }
+  ],
+  "codex": [
+    {
+      "keys": ["web_search"],
+      "source": "https://learn.chatgpt.com/docs/web-search#configure-local-web-search",
+      "choices": [
+        {"value": "disabled", "description": "CodexのWeb検索ツールを無効にします。シェルコマンドなどの通信可否は別の設定です。"},
+        {"value": "cached", "description": "OpenAIが管理する索引に保存済みの検索結果を使います。任意のページをその場で取得するliveとは異なり、最新の状態とは限りません。"},
+        {"value": "indexed", "description": "検索索引を通じて許可される場合にだけ外部Webへアクセスします。cachedの保存済み結果だけを使う動作とは区別されます。"},
+        {"value": "live", "description": "Webから最新の情報を取得します。ニュースや直近の変更など、新しい情報が必要な調査向けです。"}
+      ]
+    },
+    {
+      "keys": ["model"],
+      "source": "https://learn.chatgpt.com/docs/models#recommended-models",
+      "choices": [
+        {"value": "gpt-6-astra", "description": "複雑なコード・アプリ・調査など、特に高度な推論や判断が必要な作業向けです。"},
+        {"value": "gpt-6.1-sol", "description": "Astraに近い性能をより低い費用で使うモデルです。複雑な作業を繰り返す用途や長時間の作業向けです。"},
+        {"value": "gpt-6.1-terra", "description": "文章作成、画像の理解、コンピューター操作を高速かつ効率的に行うモデルです。"},
+        {"value": "gpt-6-luna", "description": "要約・抽出・範囲の限られたコーディングなど、対象を絞った大量の処理向けです。"}
+      ]
+    },
+    {
+      "keys": ["model_reasoning_effort", "plan_mode_reasoning_effort"],
+      "source": "https://learn.chatgpt.com/docs/models#choose-a-model",
+      "choices": [
+        {"value": "low", "description": "推論への労力を低く設定します。深さより応答速度とトークン消費を優先します。対応レベルはモデルとクライアントによって異なります。"},
+        {"value": "medium", "description": "推論への労力を中程度に設定します。対応レベルはモデルとクライアントによって異なります。"},
+        {"value": "high", "description": "推論への労力を高く設定します。複雑な作業では改善を期待できますが、時間とトークンを多く使います。"},
+        {"value": "xhigh", "description": "highより高い推論レベルです。対応するモデルで使え、時間とトークンの消費が増えます。"},
+        {"value": "max", "description": "さらに高い推論レベルです。モデルが対応する場合に使え、深い分析に時間とトークンを使います。"},
+        {"value": "ultra", "description": "複数のサブエージェントを使って複雑な作業を進めるモードです。利用できるモデル・クライアントに制約があります。"}
+      ]
+    },
+    {
+      "keys": ["approval_policy"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-sample",
+      "choices": [
+        {"value": "on-request", "description": "モデルが必要と判断したときにコマンド実行などの承認を求めます。"},
+        {"value": "never", "description": "承認を求めません。サンドボックスの制約は別に適用され、制約を超える操作が自動的に許可されるわけではありません。"}
+      ]
+    },
+    {
+      "keys": ["sandbox_mode"],
+      "source": "https://learn.chatgpt.com/docs/agent-approvals-security",
+      "choices": [
+        {"value": "read-only", "description": "ファイルの読み取りを中心に実行し、書き込みを制限します。編集や制約外の操作には承認が必要になる場合があります。"},
+        {"value": "workspace-write", "description": "作業領域への書き込みを許可します。領域外への書き込みやネットワークは別の制約・承認に従います。"},
+        {"value": "danger-full-access", "description": "サンドボックスによるファイルとネットワークの制限を外します。実行時の承認を求めるかどうかはapproval_policyで決まります。"}
+      ]
+    },
+    {
+      "keys": ["model_reasoning_summary"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-sample",
+      "choices": [
+        {"value": "auto", "description": "推論の要約の出し方を自動で選びます。対応モデルで有効です。"},
+        {"value": "concise", "description": "短い推論の要約を求めます。最終回答の長さを変える設定ではありません。"},
+        {"value": "detailed", "description": "詳しい推論の要約を求めます。最終回答の長さを変える設定ではありません。"},
+        {"value": "none", "description": "推論の要約を求めません。推論への労力はmodel_reasoning_effortで別に指定します。"}
+      ]
+    },
+    {
+      "keys": ["model_verbosity"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-sample",
+      "choices": [
+        {"value": "low", "description": "対応モデルに、短く簡潔な最終回答を求めます。"},
+        {"value": "medium", "description": "対応モデルに、中程度の詳しさの最終回答を求めます。"},
+        {"value": "high", "description": "対応モデルに、詳しい最終回答を求めます。"}
+      ]
+    },
+    {
+      "keys": ["history.persistence"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference#historypersistence",
+      "choices": [
+        {"value": "save-all", "description": "会話履歴をhistory.jsonlへ保存します。保存容量の上限はhistory.max_bytesで指定できます。"},
+        {"value": "none", "description": "会話履歴をhistory.jsonlへ保存しません。既存の履歴を削除する操作ではありません。"}
+      ]
+    },
+    {
+      "keys": ["tui.alternate_screen"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference#tuialternate_screen",
+      "choices": [
+        {"value": "auto", "description": "代替画面の使用を自動で判断します。Zellijではスクロール履歴を残すため使用しません。"},
+        {"value": "always", "description": "常に端末の代替画面を使います。"},
+        {"value": "never", "description": "代替画面を使わず、通常の端末画面に表示します。"}
+      ]
+    },
+    {
+      "keys": ["projects.<path>.trust_level"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "choices": [
+        {"value": "trusted", "description": "このプロジェクトを信頼済みとして扱います。プロジェクト内の.codex設定・フック・ルールを読み込める状態になります。"},
+        {"value": "untrusted", "description": "このプロジェクトを未信頼として扱い、プロジェクト内の.codex設定・フック・ルールを読み飛ばします。"}
+      ]
+    },
+    {
+      "keys": ["browser_use.allow_history_access"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "choices": [
+        {"value": true, "description": "この設定ではブラウザー履歴へのアクセスを制限しません。管理者の制約があれば、そちらが適用されます。"},
+        {"value": false, "description": "ブラウザー履歴へのアクセスを制限します。管理者の要件によって、この制限が強制される場合もあります。"}
+      ]
+    },
+    {
+      "keys": ["file_opener"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "choices": [
+        {"value": "vscode", "description": "出力中のファイル参照を、VS Code用のURIスキームで開きます。"},
+        {"value": "vscode-insiders", "description": "出力中のファイル参照を、VS Code Insiders用のURIスキームで開きます。"},
+        {"value": "windsurf", "description": "出力中のファイル参照を、Windsurf用のURIスキームで開きます。"},
+        {"value": "cursor", "description": "出力中のファイル参照を、Cursor用のURIスキームで開きます。"},
+        {"value": "none", "description": "ファイル参照を開くためのエディター用URIスキームを指定しません。"}
+      ]
+    }
+  ]
+}

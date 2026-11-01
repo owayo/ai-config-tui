@@ -381,26 +381,30 @@ fn modal(frame: &mut Frame, app: &mut App) {
             field,
             options,
             state,
+            scroll,
             error,
         } => {
             let height =
-                (options.len() + 8).min(frame.area().height.saturating_sub(2) as usize) as u16;
-            let area = popup(frame.area(), 80, height);
+                (options.len() + 13).min(frame.area().height.saturating_sub(2) as usize) as u16;
+            let area = popup(frame.area(), 96, height);
             frame.render_widget(Clear, area);
             frame.render_widget(
                 panel(format!("{} · 候補から選択", safe(&field.label)), true),
                 area,
             );
+            let inner = area.inner(ratatui::layout::Margin::new(2, 1));
+            let help_height = (inner.height / 2).clamp(3, 9);
             let parts = Layout::vertical([
                 Constraint::Length(2),
-                Constraint::Min(1),
+                Constraint::Min(2),
+                Constraint::Length(help_height),
+                Constraint::Length(u16::from(error.is_some())),
                 Constraint::Length(2),
-                Constraint::Length(1),
             ])
-            .split(area.inner(ratatui::layout::Margin::new(2, 1)));
+            .split(inner);
             frame.render_widget(
                 Paragraph::new(format!(
-                    "{} · ↑↓で選び、Enterで反映\n選択した設定はCtrl+Sでファイルへ保存します。",
+                    "{}\n変更はCtrl+Sでファイルへ保存します。",
                     safe(&field.key())
                 ))
                 .style(Style::default().fg(MUTED)),
@@ -417,18 +421,47 @@ fn modal(frame: &mut Frame, app: &mut App) {
                 parts[1],
                 state,
             );
+            if let Some(option) = state.selected().and_then(|index| options.get(index)) {
+                let block = Block::default()
+                    .borders(Borders::TOP)
+                    .border_style(Style::default().fg(BORDER))
+                    .title("説明 · Ctrl+↑↓でスクロール");
+                let help_area = block.inner(parts[2]);
+                frame.render_widget(block, parts[2]);
+                let mut lines = vec![Line::from(safe(&option.help.description))];
+                if !option.help.source.is_empty() {
+                    lines.push(Line::from(""));
+                    lines.push(Line::styled(
+                        format!("公式資料 · 確認日 {}", safe(&option.help.verified_at)),
+                        Style::default().fg(MUTED),
+                    ));
+                    lines.push(Line::styled(
+                        safe(&option.help.source),
+                        Style::default().fg(MUTED),
+                    ));
+                }
+                let help = Paragraph::new(lines).wrap(Wrap { trim: false });
+                let max_scroll = help
+                    .line_count(help_area.width)
+                    .saturating_sub(help_area.height as usize)
+                    .min(u16::MAX as usize) as u16;
+                *scroll = (*scroll).min(max_scroll);
+                frame.render_widget(help.scroll((*scroll, 0)), help_area);
+            }
             if let Some(error) = error {
                 frame.render_widget(
                     Paragraph::new(safe(error))
                         .style(Style::default().fg(RED))
                         .wrap(Wrap { trim: false }),
-                    parts[2],
+                    parts[3],
                 );
             }
             frame.render_widget(
-                Paragraph::new("Enter: 反映   Esc: キャンセル   Home/End: 先頭/末尾")
-                    .style(Style::default().fg(AMBER)),
-                parts[3],
+                Paragraph::new(
+                    "↑↓: 候補   Enter: 反映   Esc: 戻る\nHome/End: 先頭/末尾   Ctrl+↑↓: 説明",
+                )
+                .style(Style::default().fg(AMBER)),
+                parts[4],
             );
         }
         Modal::Edit {

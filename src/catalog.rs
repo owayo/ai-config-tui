@@ -60,6 +60,73 @@ pub fn entries(provider: Provider) -> &'static [Entry] {
     }
 }
 
+pub struct ChoiceHelp {
+    pub description: String,
+    pub source: String,
+    pub verified_at: String,
+}
+
+impl ChoiceHelp {
+    pub fn local(description: &str) -> Self {
+        Self {
+            description: description.into(),
+            source: String::new(),
+            verified_at: String::new(),
+        }
+    }
+}
+
+#[derive(Deserialize)]
+struct ChoiceText {
+    value: Value,
+    description: String,
+}
+
+#[derive(Deserialize)]
+struct ChoiceGroup {
+    keys: Vec<String>,
+    source: String,
+    choices: Vec<ChoiceText>,
+}
+
+#[derive(Deserialize)]
+struct ChoiceCatalog {
+    verified_at: String,
+    claude: Vec<ChoiceGroup>,
+    codex: Vec<ChoiceGroup>,
+}
+
+static CHOICE_HELP: LazyLock<ChoiceCatalog> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("../data/choice-help.ja.json"))
+        .expect("the bundled choice explanations must be valid")
+});
+
+pub fn choice_help(provider: Provider, path: &[String], value: &Value) -> Option<ChoiceHelp> {
+    let groups = match provider {
+        Provider::Claude => &CHOICE_HELP.claude,
+        Provider::Codex => &CHOICE_HELP.codex,
+    };
+    for group in groups {
+        if !group.keys.iter().any(|key| {
+            let parts = key.split('.').collect::<Vec<_>>();
+            parts.len() == path.len()
+                && parts.iter().zip(path).all(|(part, actual)| {
+                    *part == actual || (part.starts_with('<') && part.ends_with('>'))
+                })
+        }) {
+            continue;
+        }
+        if let Some(text) = group.choices.iter().find(|text| &text.value == value) {
+            return Some(ChoiceHelp {
+                description: text.description.clone(),
+                source: group.source.clone(),
+                verified_at: CHOICE_HELP.verified_at.clone(),
+            });
+        }
+    }
+    None
+}
+
 pub fn help(provider: Provider, key: &str) -> (String, String) {
     let names = match provider {
         Provider::Claude => &HELP.claude,
