@@ -193,7 +193,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         } else {
             safe(&field.display_value())
         };
-        let name = if profile.provider == Provider::Claude && field.warning_label().is_none() {
+        let name = if field.warning_label().is_none() {
             format!(
                 "{}{}",
                 field.tree_prefix,

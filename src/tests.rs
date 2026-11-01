@@ -607,7 +607,7 @@ fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_f
 }
 
 #[test]
-fn claude_settings_are_grouped_parent_first_and_codex_stays_flat() {
+fn settings_are_grouped_parent_first_for_both_providers() {
     let fixture = Fixture::new();
     let mut app = fixture.app();
     let rows = app.rows();
@@ -658,13 +658,175 @@ fn claude_settings_are_grouped_parent_first_and_codex_stays_flat() {
     );
 
     app.handle_key(key(KeyCode::Char(']')));
-    assert!(
-        app.rows()
-            .iter()
-            .all(|field| !field.group && field.tree_prefix.is_empty())
-    );
+    let rows = app.rows();
+    for (index, field) in rows
+        .iter()
+        .enumerate()
+        .filter(|(_, field)| field.path.len() > 1)
+    {
+        let parent = &field.path[..field.path.len() - 1];
+        assert!(rows[..index].iter().any(|row| row.path == parent));
+        assert!(!field.tree_prefix.is_empty());
+    }
     assert!(!fixture.path(".claude").exists());
     assert!(!fixture.path(".codex").exists());
+}
+
+#[test]
+fn codex_browser_settings_render_as_a_tree_and_edit_the_original_path() {
+    for original in [
+        None,
+        Some(
+            "[browser_use]\nallow_history_access = false # keep\nunknown = 7\ncustom_toggle = true # extra\n",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        if let Some(original) = original {
+            fixture.write(".codex/config.toml", original);
+        }
+        let mut app = fixture.app();
+        app.handle_key(key(KeyCode::Char(']')));
+        app.focus = Focus::Settings;
+        app.modal = Some(Modal::Search(Editor::new(
+            "browser_use.allow_history_access",
+        )));
+        app.handle_key(key(KeyCode::Enter));
+        let rows = app.rows();
+        assert_eq!(
+            rows.iter().map(|field| field.key()).collect::<Vec<_>>(),
+            ["browser_use", "browser_use.allow_history_access"]
+        );
+        assert!(rows[0].tree_prefix.is_empty());
+        assert_eq!(rows[1].tree_prefix, "└─ ");
+        assert_eq!(app.table_state.selected(), Some(1));
+        assert_eq!(
+            app.current_field().unwrap().path,
+            path(&["browser_use", "allow_history_access"])
+        );
+        assert_eq!(rows[1].value.as_deref(), original.map(|_| "false"));
+
+        for (width, height) in [(60, 16), (180, 42)] {
+            let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
+            terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+            if width == 180 {
+                let mut screen = String::new();
+                for row in terminal.backend().buffer().content.chunks(width as usize) {
+                    let mut column = 0;
+                    while column < row.len() {
+                        let symbol = row[column].symbol();
+                        screen.push_str(symbol);
+                        column += unicode_width::UnicodeWidthStr::width(symbol).max(1);
+                    }
+                    screen.push('\n');
+                }
+                assert!(screen.contains("└─ allow_history_access"), "{screen}");
+                assert!(
+                    screen.contains("キー: browser_use.allow_history_access"),
+                    "{screen}"
+                );
+            }
+        }
+        assert!(!app.config().unwrap().dirty());
+        if let Some(original) = original {
+            app.handle_key(key(KeyCode::Char(' ')));
+            let Parsed::Toml(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+                panic!()
+            };
+            assert_eq!(
+                document["browser_use"]["allow_history_access"].as_bool(),
+                Some(true)
+            );
+            assert_eq!(document["browser_use"]["unknown"].as_integer(), Some(7));
+            assert!(app.config().unwrap().text.contains("# keep"));
+            app.query.clear();
+            let index = app
+                .rows()
+                .iter()
+                .position(|field| field.path == path(&["browser_use", "custom_toggle"]))
+                .unwrap();
+            app.table_state.select(Some(index));
+            assert_eq!(app.current_field().unwrap().value.as_deref(), Some("true"));
+            app.handle_key(key(KeyCode::Char(' ')));
+            assert_eq!(app.current_field().unwrap().value.as_deref(), Some("false"));
+            assert!(app.config().unwrap().text.contains("# extra"));
+            app.modal = Some(Modal::Search(Editor::new(
+                "browser_use.allow_history_access",
+            )));
+            app.handle_key(key(KeyCode::Enter));
+            assert_eq!(app.current_field().unwrap().value.as_deref(), Some("true"));
+            app.handle_key(key(KeyCode::Char(' ')));
+            let Parsed::Toml(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+                panic!()
+            };
+            assert_eq!(
+                document["browser_use"]["allow_history_access"].as_bool(),
+                Some(false)
+            );
+            assert_eq!(document["browser_use"]["unknown"].as_integer(), Some(7));
+            assert!(app.config().unwrap().text.contains("# keep"));
+            assert_eq!(
+                fs::read_to_string(fixture.path(".codex/config.toml")).unwrap(),
+                original
+            );
+        } else {
+            assert!(!fixture.path(".codex").exists());
+        }
+    }
+}
+
+#[test]
+fn codex_hierarchy_keeps_quoted_names_whole_and_uses_codex_group_labels() {
+    let fixture = Fixture::new();
+    fixture.write(".codex/config.toml", "[model_providers.\"work.api\"]\nbase_url = 'https://example.com/old'\n[mcp_servers.\"work.server\".oauth]\nclient_id = 'sample-client'\n");
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    app.focus = Focus::Settings;
+    let rows = app.rows();
+    let group = rows
+        .iter()
+        .find(|field| field.path == path(&["mcp_servers", "work.server"]))
+        .unwrap();
+    assert!(group.group);
+    assert!(group.label.starts_with("MCPサーバー"));
+    assert!(group.disabled_reason().is_some());
+    assert!(
+        !rows
+            .iter()
+            .any(|field| field.path == path(&["model_providers", "work"]))
+    );
+    let index = rows
+        .iter()
+        .position(|field| field.path == path(&["model_providers", "work.api", "base_url"]))
+        .unwrap();
+    assert!(!rows[index].tree_prefix.is_empty());
+    app.table_state.select(Some(index));
+    app.handle_key(key(KeyCode::Enter));
+    let Some(Modal::Edit {
+        editor,
+        path: Some(selected),
+        ..
+    }) = &mut app.modal
+    else {
+        panic!()
+    };
+    assert_eq!(
+        selected,
+        &path(&["model_providers", "work.api", "base_url"])
+    );
+    *editor = Editor::new("https://example.com/next");
+    app.handle_key(control('s'));
+    let Parsed::Toml(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+        panic!()
+    };
+    assert_eq!(
+        document["model_providers"]["work.api"]["base_url"].as_str(),
+        Some("https://example.com/next")
+    );
+    assert_eq!(
+        document["mcp_servers"]["work.server"]["oauth"]["client_id"].as_str(),
+        Some("sample-client")
+    );
+    assert!(document["model_providers"].get("work").is_none());
 }
 
 #[test]

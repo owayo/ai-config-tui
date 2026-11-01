@@ -374,6 +374,7 @@ fn get_value(parsed: &Parsed, path: &[String]) -> Option<String> {
             Some(
                 item.as_str()
                     .map(String::from)
+                    .or_else(|| item.as_bool().map(|value| value.to_string()))
                     .unwrap_or_else(|| item.to_string().trim().into()),
             )
         }
@@ -439,6 +440,7 @@ fn collect_toml(table: &dyn TableLike, prefix: &[String], fields: &mut Vec<Field
             let text = value
                 .as_str()
                 .map(String::from)
+                .or_else(|| value.as_bool().map(|value| value.to_string()))
                 .unwrap_or_else(|| value.to_string().trim().into());
             append_extra(fields, path, text, kind);
         }
@@ -504,7 +506,7 @@ impl SettingNode {
     }
 }
 
-pub fn hierarchy(fields: Vec<Field>, query: &str) -> Vec<Field> {
+pub fn hierarchy(fields: Vec<Field>, provider: Provider, query: &str) -> Vec<Field> {
     let mut root = SettingNode::default();
     for field in fields {
         root.insert(field);
@@ -512,7 +514,7 @@ pub fn hierarchy(fields: Vec<Field>, query: &str) -> Vec<Field> {
     root.children
         .retain_mut(|(_, node)| node.retain_matches(query));
     let mut rows = Vec::new();
-    flatten_tree(root.children, &mut Vec::new(), "", &mut rows);
+    flatten_tree(root.children, &mut Vec::new(), "", &mut rows, provider);
     rows
 }
 
@@ -521,6 +523,7 @@ fn flatten_tree(
     path: &mut Vec<String>,
     indent: &str,
     rows: &mut Vec<Field>,
+    provider: Provider,
 ) {
     let count = nodes.len();
     for (index, (name, node)) in nodes.into_iter().enumerate() {
@@ -529,7 +532,7 @@ fn flatten_tree(
         let root = path.len() == 1;
         let mut field = node.field.unwrap_or_else(|| {
             let key = path.join(".");
-            let (label, _) = catalog::help(Provider::Claude, &key);
+            let (label, _) = catalog::help(provider, &key);
             let mut group = preset(
                 &key,
                 &label,
@@ -554,7 +557,7 @@ fn flatten_tree(
         } else {
             format!("{indent}{}", if last { "   " } else { "│  " })
         };
-        flatten_tree(node.children, path, &child_indent, rows);
+        flatten_tree(node.children, path, &child_indent, rows, provider);
         path.pop();
     }
 }
