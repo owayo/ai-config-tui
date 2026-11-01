@@ -219,10 +219,11 @@ pub fn fields(config: &Config) -> Vec<Field> {
             &mut fields[index]
         } else {
             indexes.insert(entry.key.clone(), fields.len());
+            let (label, description) = catalog::help(config.provider, &entry.key);
             fields.push(preset(
                 &entry.key,
-                &entry.key,
-                "公式リファレンスに記載されている設定です。",
+                &label,
+                &description,
                 entry.kind.clone(),
                 &entry.type_name,
             ));
@@ -425,7 +426,6 @@ fn append_extra(fields: &mut Vec<Field>, path: Vec<String>, text: String, kind: 
     let field = if let Some(template) = template {
         let mut field = template.clone();
         field.path = path;
-        field.label = field.key();
         field.value = Some(text);
         field.template = false;
         field

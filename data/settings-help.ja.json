@@ -1,0 +1,2144 @@
+{
+  "claude": {
+    "advisorModel": {
+      "label": "相談用モデル",
+      "description": "助言を求めるadvisorツールが使うモデル。"
+    },
+    "alwaysThinkingEnabled": {
+      "label": "拡張思考",
+      "description": "対応モデルの拡張思考を切り替えます。"
+    },
+    "availableModels": {
+      "label": "選択可能なモデル",
+      "description": "利用者が選べるモデルを制限します。"
+    },
+    "availableModelsMatch": {
+      "label": "モデルIDの一致方法",
+      "description": "許可モデルを指定バージョンだけに一致させるかを指定します。"
+    },
+    "deniedModels": {
+      "label": "使用禁止モデル",
+      "description": "許可リストに含まれていても使用を禁止するモデル。"
+    },
+    "effortLevel": {
+      "label": "既定の推論レベル",
+      "description": "個別設定のないモデルに適用する推論レベル。"
+    },
+    "enforceAvailableModels": {
+      "label": "既定モデルの許可制限",
+      "description": "既定モデルの選択にもモデル許可リストを適用します。"
+    },
+    "fallbackModel": {
+      "label": "代替モデル",
+      "description": "主モデルが混雑しているときに使うモデル。"
+    },
+    "fastMode": {
+      "label": "高速モード",
+      "description": "利用可能なセッションで高速モードを使います。"
+    },
+    "fastModePerSessionOptIn": {
+      "label": "高速モードの都度有効化",
+      "description": "セッションごとに高速モードを有効にする操作を求めます。"
+    },
+    "language": {
+      "label": "応答言語",
+      "description": "Claudeの応答に使う言語。"
+    },
+    "maxEffortLevel": {
+      "label": "推論レベルの上限",
+      "description": "全モデルまたはモデルごとに推論レベルを制限します。"
+    },
+    "model": {
+      "label": "起動時のモデル",
+      "description": "新しいセッションで使うモデル。"
+    },
+    "modelOverrides": {
+      "label": "モデルIDの置き換え",
+      "description": "標準のモデルIDと接続先独自のIDを対応付けます。"
+    },
+    "modelPicker": {
+      "label": "モデル選択画面",
+      "description": "モデルの表示順や選択画面での名前を指定します。"
+    },
+    "modelPricing": {
+      "label": "モデルの単価",
+      "description": "費用表示の計算に使う独自の単価。"
+    },
+    "modelSettings": {
+      "label": "モデルごとの設定",
+      "description": "モデル別に推論レベルや圧縮しきい値などを保持します。"
+    },
+    "outputStyle": {
+      "label": "出力スタイル",
+      "description": "Claudeの役割、口調、出力形式を指定します。"
+    },
+    "promptCacheTtl": {
+      "label": "会話のキャッシュ有効期間",
+      "description": "主会話のプロンプトキャッシュを保持する期間。"
+    },
+    "showThinkingSummaries": {
+      "label": "思考の要約表示",
+      "description": "思考内容の要約を画面に表示します。"
+    },
+    "subagentPromptCacheTtl": {
+      "label": "サブエージェントのキャッシュ期間",
+      "description": "主会話以外のリクエストのキャッシュ有効期間。"
+    },
+    "switchModelsOnFlag": {
+      "label": "検知時のモデル切り替え",
+      "description": "安全性の判定で検知された場合のモデル変更や停止方法。"
+    },
+    "ultracode": {
+      "label": "ワークフローの自動計画",
+      "description": "作業の内容に応じてワークフローを計画させます。"
+    },
+    "allowManagedPermissionRulesOnly": {
+      "label": "管理者の権限ルールだけ適用",
+      "description": "権限ルールの読み込み元を管理者設定に限定します。"
+    },
+    "autoMode": {
+      "label": "自動権限判定のルール",
+      "description": "autoモードの判定に使う許可・禁止ルール。"
+    },
+    "autoMode.classifyAllShell": {
+      "label": "全シェルコマンドを自動判定",
+      "description": "狭い許可ルールに一致してもautoモードの判定を通します。"
+    },
+    "disableAutoMode": {
+      "label": "自動権限モードの無効化",
+      "description": "権限モードの選択肢からautoを除きます。"
+    },
+    "permissions": {
+      "label": "ツールの権限",
+      "description": "ツールの許可・確認・禁止と起動時の権限モード。"
+    },
+    "permissions.defaultMode": {
+      "label": "起動時の権限モード",
+      "description": "新しいセッションで使う権限モード。"
+    },
+    "permissions.allow": {
+      "label": "許可ルール",
+      "description": "確認なしで実行を許可するツールのルール。"
+    },
+    "permissions.ask": {
+      "label": "確認ルール",
+      "description": "実行するたびに確認するツールのルール。"
+    },
+    "permissions.deny": {
+      "label": "禁止ルール",
+      "description": "使用を禁止するツールや読み込み対象のルール。"
+    },
+    "permissions.additionalDirectories": {
+      "label": "追加の作業ディレクトリ",
+      "description": "現在の作業場所に加えてアクセスを許可するディレクトリ。"
+    },
+    "permissions.blockReadsOutsideWorkingDirectories": {
+      "label": "作業範囲外の読み込み禁止",
+      "description": "権限モードにかかわらず作業範囲外のファイルを読ませません。"
+    },
+    "permissions.disableBypassPermissionsMode": {
+      "label": "権限確認の省略を禁止",
+      "description": "bypassPermissionsモードへの切り替えを禁止します。"
+    },
+    "useAutoModeDuringPlan": {
+      "label": "計画中の自動権限判定",
+      "description": "planモードのシェルコマンドをauto判定するか指定します。"
+    },
+    "skipAutoPermissionPrompt": {
+      "label": "自動モードの初回案内を省略",
+      "description": "autoモードを初めて選ぶときの案内を省略します。"
+    },
+    "skipDangerousModePermissionPrompt": {
+      "label": "権限省略モードの確認を省略",
+      "description": "bypassPermissionsへ入るときの確認画面を省略します。"
+    },
+    "sandbox": {
+      "label": "シェルのサンドボックス",
+      "description": "シェルコマンドのファイル操作とネットワーク接続を隔離します。"
+    },
+    "sandbox.enabled": {
+      "label": "シェルの隔離を有効化",
+      "description": "対応OSでシェルコマンドをサンドボックス内で実行します。"
+    },
+    "sandbox.allowAppleEvents": {
+      "label": "Apple Eventsの許可",
+      "description": "隔離したコマンドからApple Eventsを送れるようにします。"
+    },
+    "sandbox.allowNestedUserNamespaces": {
+      "label": "入れ子のユーザー名前空間",
+      "description": "隔離したコマンドにLinuxのユーザー名前空間作成を許可します。"
+    },
+    "sandbox.allowUnsandboxedCommands": {
+      "label": "隔離外での再実行",
+      "description": "隔離で失敗したコマンドを隔離外で再実行できるか指定します。"
+    },
+    "sandbox.autoAllowBashIfSandboxed": {
+      "label": "隔離したシェルを自動許可",
+      "description": "隔離済みのシェルコマンドの権限確認を省略します。"
+    },
+    "sandbox.bwrapPath": {
+      "label": "bubblewrapの実行パス",
+      "description": "標準の検索パス以外にあるbubblewrapを指定します。"
+    },
+    "sandbox.credentials": {
+      "label": "隔離内の認証情報",
+      "description": "隔離したコマンドから認証情報を隠す・マスクする設定。"
+    },
+    "sandbox.credentials.allowPlaintextInject": {
+      "label": "平文HTTPへの認証情報注入",
+      "description": "許可した検証環境のHTTP通信にも認証情報を渡せるようにします。"
+    },
+    "sandbox.credentials.awsPairs": {
+      "label": "AWSキーの対応付け",
+      "description": "独自名のAWSアクセスキーとシークレットキーを組にします。"
+    },
+    "sandbox.credentials.envVars": {
+      "label": "認証用環境変数の保護",
+      "description": "隔離内で隠す・マスクする環境変数。"
+    },
+    "sandbox.credentials.files": {
+      "label": "認証ファイルの保護",
+      "description": "隔離内で読み込みを禁止・マスクする認証ファイル。"
+    },
+    "sandbox.credentials.sigv4": {
+      "label": "AWS署名通信の扱い",
+      "description": "ストリーミングなどの署名付きAWS通信の扱いを指定します。"
+    },
+    "sandbox.enableWeakerNestedSandbox": {
+      "label": "コンテナ内の隔離互換設定",
+      "description": "非特権コンテナ内でLinuxの隔離を動かすための設定。"
+    },
+    "sandbox.enableWeakerNetworkIsolation": {
+      "label": "ネットワーク隔離の互換設定",
+      "description": "macOSの中継プロキシ環境で一部ツールのTLS接続を許可します。"
+    },
+    "sandbox.excludedCommands": {
+      "label": "隔離の対象外コマンド",
+      "description": "サンドボックスの外で実行するコマンド。"
+    },
+    "sandbox.failIfUnavailable": {
+      "label": "隔離できなければ起動を中止",
+      "description": "隔離に失敗した状態での実行を禁止します。"
+    },
+    "sandbox.filesystem": {
+      "label": "隔離内のファイル権限",
+      "description": "隔離したコマンドが読み書きできるパス。"
+    },
+    "sandbox.filesystem.allowManagedReadPathsOnly": {
+      "label": "管理者の読み込み許可だけ適用",
+      "description": "利用者が管理者の読み込み制限を緩めることを防ぎます。"
+    },
+    "sandbox.filesystem.allowRead": {
+      "label": "読み込みを追加許可",
+      "description": "読み込み禁止範囲の中で例外として許可するパス。"
+    },
+    "sandbox.filesystem.allowWrite": {
+      "label": "書き込みを追加許可",
+      "description": "隔離内で書き込みを許可するパス。"
+    },
+    "sandbox.filesystem.denyRead": {
+      "label": "読み込み禁止パス",
+      "description": "隔離したコマンドが読み込めないパス。"
+    },
+    "sandbox.filesystem.denyWrite": {
+      "label": "書き込み禁止パス",
+      "description": "隔離したコマンドが書き込めないパス。"
+    },
+    "sandbox.filesystem.disabled": {
+      "label": "ファイル隔離の無効化",
+      "description": "ネットワーク隔離を残し、ファイルの隔離だけを無効にします。"
+    },
+    "sandbox.ignoreViolations": {
+      "label": "違反報告を省略するパス",
+      "description": "想定内のアクセスについて隔離違反の報告を抑えます。"
+    },
+    "sandbox.network": {
+      "label": "隔離内のネットワーク",
+      "description": "隔離したコマンドの接続先・ポート・ソケット。"
+    },
+    "sandbox.network.allowAllUnixSockets": {
+      "label": "全Unixソケットを許可",
+      "description": "隔離したコマンドからすべてのUnixソケットへ接続できます。"
+    },
+    "sandbox.network.allowedDomains": {
+      "label": "接続許可ドメイン",
+      "description": "確認なしで接続できるドメイン。"
+    },
+    "sandbox.network.allowLocalBinding": {
+      "label": "ローカルの待受けを許可",
+      "description": "隔離内のポート待受けやmacOSでのlocalhost接続を許可します。"
+    },
+    "sandbox.network.allowMachLookup": {
+      "label": "macOSサービスの検索許可",
+      "description": "隔離内から利用できるmacOSのXPCサービス。"
+    },
+    "sandbox.network.allowManagedDomainsOnly": {
+      "label": "管理者の接続許可だけ適用",
+      "description": "接続先の許可リストを管理者設定に限定します。"
+    },
+    "sandbox.network.allowUnixSockets": {
+      "label": "許可するUnixソケット",
+      "description": "macOSで接続を許可するUnixソケットのパス。"
+    },
+    "sandbox.network.deniedDomains": {
+      "label": "接続禁止ドメイン",
+      "description": "許可されたワイルドカードの範囲内でも接続を禁止します。"
+    },
+    "sandbox.network.httpProxyPort": {
+      "label": "HTTPプロキシのポート",
+      "description": "隔離内のHTTP通信を送る独自プロキシのポート。"
+    },
+    "sandbox.network.socksProxyPort": {
+      "label": "SOCKSプロキシのポート",
+      "description": "隔離内のSOCKS通信を送る独自プロキシのポート。"
+    },
+    "sandbox.network.strictAllowlist": {
+      "label": "許可リスト外の接続を禁止",
+      "description": "未許可の接続先は確認を出さずに拒否します。"
+    },
+    "sandbox.network.tlsTerminate": {
+      "label": "プロキシでのTLS終端",
+      "description": "隔離用プロキシでHTTPS通信の内容を検査できるようにします。"
+    },
+    "sandbox.ripgrep": {
+      "label": "検索コマンドの実行設定",
+      "description": "隔離内で使うripgrepの実行設定。"
+    },
+    "sandbox.socatPath": {
+      "label": "socatの実行パス",
+      "description": "プロキシで使うsocatの実行ファイル。"
+    },
+    "autoCompactEnabled": {
+      "label": "会話の自動圧縮",
+      "description": "コンテキストの上限に近づいた会話を自動で圧縮します。"
+    },
+    "autoCompactWindow": {
+      "label": "会話の自動圧縮しきい値",
+      "description": "どの程度コンテキストを使った時点で圧縮するかを指定します。"
+    },
+    "autoMemoryDirectory": {
+      "label": "自動メモリの保存先",
+      "description": "自動メモリを書き込むディレクトリ。"
+    },
+    "autoMemoryEnabled": {
+      "label": "自動メモリ",
+      "description": "会話からのメモリの保存と利用を切り替えます。"
+    },
+    "bashOutputMaxChars": {
+      "label": "コマンド出力の最大文字数",
+      "description": "成功したコマンドの出力を会話へ渡す文字数の上限。"
+    },
+    "claudeMd": {
+      "label": "管理者の共通指示",
+      "description": "管理者設定から共通のCLAUDE.md指示を追加します。"
+    },
+    "claudeMdExcludes": {
+      "label": "読み込まない指示ファイル",
+      "description": "メモリ読み込み時に除外するCLAUDE.mdファイル。"
+    },
+    "env": {
+      "label": "環境変数",
+      "description": "セッションと子プロセスへ渡す環境変数。"
+    },
+    "fileCheckpointingEnabled": {
+      "label": "ファイルの復元用記録",
+      "description": "変更前のファイルを記録し、巻き戻しに使います。"
+    },
+    "idleCompaction": {
+      "label": "離席中の会話圧縮",
+      "description": "操作がない長い会話の圧縮方法。"
+    },
+    "plansDirectory": {
+      "label": "計画ファイルの保存先",
+      "description": "planモードで作成する計画ファイルのディレクトリ。"
+    },
+    "skillListingBudgetFraction": {
+      "label": "スキル一覧のコンテキスト比率",
+      "description": "スキル一覧に割り当てるコンテキストの割合。"
+    },
+    "skillListingMaxDescChars": {
+      "label": "スキル説明の最大文字数",
+      "description": "スキル一覧に載せる各説明の長さを制限します。"
+    },
+    "taskOutputMaxChars": {
+      "label": "タスク出力の文字数（廃止）",
+      "description": "TaskOutputツールとともに廃止された設定です。"
+    },
+    "askUserQuestionTimeout": {
+      "label": "質問の応答待ち時間",
+      "description": "未回答の質問から自動で続行するまでの待ち時間。"
+    },
+    "autoContinueAtUsageLimit": {
+      "label": "利用制限の解除後に自動続行",
+      "description": "セッションを開いたまま制限の解除を待ち、作業を再開します。"
+    },
+    "autoScrollEnabled": {
+      "label": "出力の自動スクロール",
+      "description": "全画面表示で新しい出力を追いかけます。"
+    },
+    "axScreenReader": {
+      "label": "スクリーンリーダー対応",
+      "description": "画面読み上げに適した出力にします。"
+    },
+    "bashEditDiffEnabled": {
+      "label": "シェル実行時の変更記録",
+      "description": "シェルコマンドの実行中に変更されたファイルを記録します。"
+    },
+    "companyAnnouncements": {
+      "label": "起動時のお知らせ",
+      "description": "起動時に利用者へ表示する案内。"
+    },
+    "defaultShell": {
+      "label": "入力コマンドのシェル",
+      "description": "感嘆符で入力するコマンドを実行するシェル。"
+    },
+    "dialogExpiry": {
+      "label": "転送した確認の有効時間",
+      "description": "Remote ControlやSDKへ転送した確認の応答を待つ時間。"
+    },
+    "editorMode": {
+      "label": "入力の編集モード",
+      "description": "入力欄で使うキーバインド。"
+    },
+    "emojiCompletionEnabled": {
+      "label": "絵文字の入力補完",
+      "description": "絵文字の短縮名の候補表示と置き換え。"
+    },
+    "fileSuggestion": {
+      "label": "ファイル補完コマンド",
+      "description": "ファイル名の補完候補を独自コマンドから取得します。"
+    },
+    "footerLinksRegexes": {
+      "label": "出力内のリンク検出",
+      "description": "課題番号などを検出して入力欄の下にリンクを表示します。"
+    },
+    "keybindingFlavor": {
+      "label": "単語編集キー（廃止）",
+      "description": "現在は効果のない旧設定です。"
+    },
+    "maxProseWidth": {
+      "label": "応答テキストの最大幅",
+      "description": "幅広い端末で文章の横幅を制限します。"
+    },
+    "prefersReducedMotion": {
+      "label": "画面の動きを抑える",
+      "description": "スピナーや点滅などのアニメーションを減らします。"
+    },
+    "promptSuggestionEnabled": {
+      "label": "次の入力の候補表示",
+      "description": "入力欄に表示するプロンプト候補。"
+    },
+    "respectGitignore": {
+      "label": "除外ファイルを補完しない",
+      "description": "Gitで無視するファイルをファイル補完候補から除きます。"
+    },
+    "respondToBashCommands": {
+      "label": "手動コマンドへの応答",
+      "description": "入力したシェルコマンドの結果にClaudeが応答するかを指定します。"
+    },
+    "showClearContextOnPlanAccept": {
+      "label": "計画承認時の会話消去の選択肢",
+      "description": "計画を承認する画面にコンテキスト消去の選択肢を表示します。"
+    },
+    "showTurnDuration": {
+      "label": "応答の処理時間表示",
+      "description": "各応答の完了後に処理時間を表示します。"
+    },
+    "spellcheck": {
+      "label": "入力のスペルチェック",
+      "description": "インストール済みの辞書ツールで入力の誤字を検出します。"
+    },
+    "spinnerTipsEnabled": {
+      "label": "処理中のヒント表示",
+      "description": "処理中のスピナーにヒントを表示します。"
+    },
+    "spinnerTipsOverride": {
+      "label": "処理中の独自ヒント",
+      "description": "標準ヒントの追加や置き換えに使う文。"
+    },
+    "spinnerVerbs": {
+      "label": "処理中の動詞表示",
+      "description": "ターンの実行中に表示する動詞。"
+    },
+    "statusLine": {
+      "label": "ステータス行",
+      "description": "入力欄の下に独自コマンドの出力を表示します。"
+    },
+    "subagentStatusLine": {
+      "label": "サブエージェントの状態表示",
+      "description": "サブエージェント一覧の行を独自コマンドで整形します。"
+    },
+    "syntaxHighlightingDisabled": {
+      "label": "構文色分けの無効化",
+      "description": "差分やコードブロックの色分けを無効にします。"
+    },
+    "terminalProgressBarEnabled": {
+      "label": "端末の進捗バー",
+      "description": "対応する端末で進捗バーを表示します。"
+    },
+    "terminalTitleFromRename": {
+      "label": "会話名を端末タイトルへ反映",
+      "description": "会話の名前を端末のタブタイトルに使います。"
+    },
+    "theme": {
+      "label": "配色テーマ",
+      "description": "画面の色と外観のテーマ。"
+    },
+    "timeFormat": {
+      "label": "時刻の表示形式",
+      "description": "時刻の12時間・24時間表記や独自の書式。"
+    },
+    "timeZone": {
+      "label": "時刻のタイムゾーン",
+      "description": "画面に表示する時刻の地域。"
+    },
+    "tui": {
+      "label": "端末の描画方式",
+      "description": "全画面と従来の端末表示を切り替えます。"
+    },
+    "verbose": {
+      "label": "ツール出力の詳細表示",
+      "description": "省略された要約の代わりにツールの出力を詳しく表示します。"
+    },
+    "viewMode": {
+      "label": "起動時の表示モード",
+      "description": "標準・詳細・集中などの表示を選びます。"
+    },
+    "vimInsertModeRemaps": {
+      "label": "Vim挿入モードのキー置換",
+      "description": "連続した2キーをEscape操作に対応付けます。"
+    },
+    "voice": {
+      "label": "音声入力の方式",
+      "description": "音声入力を使うかと、押して話す操作方式。"
+    },
+    "voiceEnabled": {
+      "label": "音声入力（従来形式）",
+      "description": "音声入力を切り替える旧形式の設定。"
+    },
+    "wheelScrollAccelerationEnabled": {
+      "label": "ホイールのスクロール加速",
+      "description": "全画面表示のマウスホイール加速。"
+    },
+    "attribution": {
+      "label": "コミット・PRのクレジット",
+      "description": "コミットやPRに付ける作成者の表記。"
+    },
+    "attribution.commit": {
+      "label": "コミットのクレジット",
+      "description": "コミットに追加する作成者表記。"
+    },
+    "attribution.pr": {
+      "label": "PRのクレジット",
+      "description": "PRの説明へ追加する作成者表記。"
+    },
+    "attribution.sessionUrl": {
+      "label": "コミットの会話URL",
+      "description": "クラウドなどで作成するコミットに会話のURLを付けるか指定します。"
+    },
+    "includeCoAuthoredBy": {
+      "label": "共同作成者の表記（非推奨）",
+      "description": "作成者表記はattributionによる設定へ移行しています。"
+    },
+    "includeGitInstructions": {
+      "label": "Git操作の組み込み指示",
+      "description": "コミットとPRに関する標準の指示を会話へ追加します。"
+    },
+    "prUrlTemplate": {
+      "label": "PRリンクのURL形式",
+      "description": "PRのリンク先を独自のコードレビューツールに変更します。"
+    },
+    "allowedHttpHookUrls": {
+      "label": "HTTPフックの接続先制限",
+      "description": "HTTPフックが送信できるURL。"
+    },
+    "allowManagedHooksOnly": {
+      "label": "管理者のフックだけ実行",
+      "description": "管理者が配布したフックだけを実行します。"
+    },
+    "disableAllHooks": {
+      "label": "フック等の一括無効化",
+      "description": "フック、独自ステータス行、独自ファイル補完をまとめて無効にします。"
+    },
+    "disableWorkflows": {
+      "label": "ワークフローの利用禁止",
+      "description": "管理者設定で動的ワークフローを無効にします。"
+    },
+    "enableWorkflows": {
+      "label": "動的ワークフロー",
+      "description": "契約の既定値に対して動的ワークフローを有効・無効にします。"
+    },
+    "hooks": {
+      "label": "イベントのフック",
+      "description": "イベントごとに実行する独自コマンドなどの設定。"
+    },
+    "httpHookAllowedEnvVars": {
+      "label": "HTTPフック用の環境変数",
+      "description": "HTTPフックのヘッダーに使用できる環境変数。"
+    },
+    "workflowKeywordTriggerEnabled": {
+      "label": "キーワードでワークフロー開始",
+      "description": "プロンプト内のultracodeでワークフローを起動できるようにします。"
+    },
+    "workflowSizeGuideline": {
+      "label": "ワークフローの規模",
+      "description": "動的ワークフローで目安とするエージェント数。"
+    },
+    "disableBundledSkills": {
+      "label": "同梱スキルの無効化",
+      "description": "標準で同梱されるスキルとワークフローを無効にします。"
+    },
+    "disableSkillShellExecution": {
+      "label": "スキル内シェルの実行禁止",
+      "description": "スキルや独自コマンド内のインラインシェルを禁止します。"
+    },
+    "skillOverrides": {
+      "label": "スキルの表示調整",
+      "description": "元ファイルを変えずにスキルを非表示・折り畳みにします。"
+    },
+    "syncClaudeAiSkills": {
+      "label": "アカウントのスキル同期",
+      "description": "claude.aiで有効なスキルを読み込みます。"
+    },
+    "syncClaudeAiPlugins": {
+      "label": "アカウントのプラグイン同期",
+      "description": "claude.aiで有効なプラグインを読み込み・取得します。"
+    },
+    "allowedChannelPlugins": {
+      "label": "許可するチャネルプラグイン",
+      "description": "メッセージ送信を許可するチャネルプラグイン。"
+    },
+    "blockedMarketplaces": {
+      "label": "禁止マーケットプレイス",
+      "description": "利用を禁止するプラグイン配布元。"
+    },
+    "channelsEnabled": {
+      "label": "チャネルの利用",
+      "description": "組織内でのチャネル利用を許可します。"
+    },
+    "disableCommandPluginSources": {
+      "label": "コマンド型の配布元を禁止",
+      "description": "配布元が指定したコマンドによるプラグイン導入を禁止します。"
+    },
+    "pluginSuggestionMarketplaces": {
+      "label": "導入候補の配布元",
+      "description": "プラグインの候補表示に使うマーケットプレイス。"
+    },
+    "pluginTrustMessage": {
+      "label": "プラグインの信頼確認文",
+      "description": "プラグインの警告へ追加する独自の文。"
+    },
+    "strictKnownMarketplaces": {
+      "label": "配布元の許可リスト",
+      "description": "利用者が追加・導入できるマーケットプレイスを制限します。"
+    },
+    "strictPluginOnlyCustomization": {
+      "label": "カスタマイズ元の制限",
+      "description": "スキル・エージェント・フック・MCPの読み込み元を制限します。"
+    },
+    "strictPluginOnlyCustomization.agents": {
+      "label": "エージェントの読み込み元制限",
+      "description": "エージェントをプラグインと管理者設定に限定します。"
+    },
+    "strictPluginOnlyCustomization.hooks": {
+      "label": "フックの読み込み元制限",
+      "description": "フックをプラグインと管理者設定に限定します。"
+    },
+    "strictPluginOnlyCustomization.mcp": {
+      "label": "MCPの読み込み元制限",
+      "description": "MCPをプラグインと管理者設定に限定します。"
+    },
+    "strictPluginOnlyCustomization.skills": {
+      "label": "スキルの読み込み元制限",
+      "description": "スキルをプラグインと管理者設定に限定します。"
+    },
+    "enabledPlugins": {
+      "label": "プラグインの有効化",
+      "description": "プラグインごとの有効・無効。"
+    },
+    "extraKnownMarketplaces": {
+      "label": "追加のマーケットプレイス",
+      "description": "利用するプラグイン配布元を追加します。"
+    },
+    "pluginConfigs": {
+      "label": "プラグインの設定値",
+      "description": "プラグインの設定画面で入力した値。"
+    },
+    "prependPlugins": {
+      "label": "先に実行するプラグイン",
+      "description": "利用者のプラグインより前に適用する組織のmods。"
+    },
+    "appendPlugins": {
+      "label": "後に実行するプラグイン",
+      "description": "利用者のプラグインより後に適用する組織のmods。"
+    },
+    "allowAllClaudeAiMcps": {
+      "label": "管理者MCPとコネクターの併用",
+      "description": "管理者のMCP設定とclaude.aiのコネクターを併用します。"
+    },
+    "allowClaudeInChromeWithManagedMcp": {
+      "label": "管理者MCPとChrome連携の併用",
+      "description": "管理者のMCP設定がある環境でもChrome連携を許可します。"
+    },
+    "allowedMcpServers": {
+      "label": "許可するMCPサーバー",
+      "description": "利用者が追加できるMCPサーバー。"
+    },
+    "allowManagedMcpServersOnly": {
+      "label": "管理者のMCP許可だけ適用",
+      "description": "MCPサーバーの許可リストを管理者設定に限定します。"
+    },
+    "deniedMcpServers": {
+      "label": "禁止するMCPサーバー",
+      "description": "URL・コマンド・名前などでMCPサーバーを拒否します。"
+    },
+    "disableClaudeAiConnectors": {
+      "label": "アカウント連携の無効化",
+      "description": "claude.aiのコネクターを取得・利用しません。"
+    },
+    "disabledMcpjsonServers": {
+      "label": "拒否するプロジェクトMCP",
+      "description": "プロジェクトのMCP設定から読み込まないサーバー。"
+    },
+    "enableAllProjectMcpServers": {
+      "label": "プロジェクトMCPをすべて許可",
+      "description": "プロジェクトのMCPサーバーを確認なしで許可します。"
+    },
+    "enabledMcpjsonServers": {
+      "label": "許可するプロジェクトMCP",
+      "description": "プロジェクトのMCP設定で承認済みとするサーバー。"
+    },
+    "managedMcpServers": {
+      "label": "管理者が配布するMCP",
+      "description": "全利用者に提供するリモートMCPサーバー。"
+    },
+    "agent": {
+      "label": "起動時のエージェント",
+      "description": "指定したサブエージェントの指示・ツール・モデルで起動します。"
+    },
+    "crossSessionInbound": {
+      "label": "別セッションからのメッセージ",
+      "description": "別セッションからの通知・配信・拒否の扱い。"
+    },
+    "disableAgentView": {
+      "label": "エージェント一覧の無効化",
+      "description": "バックグラウンドエージェントと一覧表示を無効にします。"
+    },
+    "isolatePeerMachines": {
+      "label": "別マシンへの通信確認",
+      "description": "別マシンのセッションへ連絡する前に確認します。"
+    },
+    "processWrapper": {
+      "label": "子プロセスの起動ラッパー",
+      "description": "バックグラウンド処理を独自の起動プログラム経由で実行します。"
+    },
+    "teammateMode": {
+      "label": "チームメンバーの表示方式",
+      "description": "エージェントチームのメンバーの表示方法。"
+    },
+    "worktree": {
+      "label": "Git worktreeの設定",
+      "description": "作業用worktreeの作り方。"
+    },
+    "worktree.baseRef": {
+      "label": "worktreeの基準ブランチ",
+      "description": "新しいworktreeの分岐元。"
+    },
+    "worktree.bgIsolation": {
+      "label": "バックグラウンド作業の隔離",
+      "description": "バックグラウンドの作業をworktreeへ分離するか指定します。"
+    },
+    "worktree.location": {
+      "label": "リモートworktreeの配置先",
+      "description": "SSH先で作成するworktreeの場所。"
+    },
+    "worktree.sparsePaths": {
+      "label": "worktreeの取得対象",
+      "description": "worktreeでチェックアウトするディレクトリ。"
+    },
+    "worktree.symlinkDirectories": {
+      "label": "worktreeで共有するディレクトリ",
+      "description": "複製の代わりにシンボリックリンクで共有するディレクトリ。"
+    },
+    "agentPushNotifEnabled": {
+      "label": "エージェントのプッシュ通知",
+      "description": "Claudeの判断で端末へプッシュ通知を送れるようにします。"
+    },
+    "awaySummaryEnabled": {
+      "label": "復帰時の会話要約",
+      "description": "端末に戻ったときにセッションの要約を表示します。"
+    },
+    "disableArtifact": {
+      "label": "Artifactの無効化（非推奨）",
+      "description": "enableArtifactへ移行した旧設定です。"
+    },
+    "disableDeepLinkRegistration": {
+      "label": "ディープリンク登録の禁止",
+      "description": "claude-cliリンクのハンドラーを登録しません。"
+    },
+    "disableDesktopLocalSessions": {
+      "label": "Desktopのローカル実行禁止",
+      "description": "Desktopで端末内のCodeセッションを起動できなくします。"
+    },
+    "disableRemoteControl": {
+      "label": "Remote Controlの無効化",
+      "description": "リモート操作の起動を禁止します。"
+    },
+    "enableArtifact": {
+      "label": "Artifactの利用",
+      "description": "いずれかの設定元でfalseを指定すると利用を禁止します。"
+    },
+    "inputNeededNotifEnabled": {
+      "label": "入力待ちのプッシュ通知",
+      "description": "利用者の操作が必要になったときに通知します。"
+    },
+    "preferredNotifChannel": {
+      "label": "完了通知の方式",
+      "description": "端末ベルとデスクトップ通知などから選びます。"
+    },
+    "remote.defaultEnvironmentId": {
+      "label": "既定のクラウド環境",
+      "description": "クラウド実行で使用する環境のID。"
+    },
+    "remoteControlAtStartup": {
+      "label": "起動時のRemote Control接続",
+      "description": "セッション開始時にリモート操作を接続します。"
+    },
+    "sshConfigs": {
+      "label": "SSH接続先",
+      "description": "Desktopの環境一覧に追加するSSH接続。"
+    },
+    "sshHostAllowlist": {
+      "label": "SSH接続先の制限",
+      "description": "DesktopからSSH接続できるホスト。"
+    },
+    "sshHostCommands": {
+      "label": "動的なSSH接続先",
+      "description": "接続先のホストをコマンドで取得するSSH接続。"
+    },
+    "allowedProviders": {
+      "label": "許可するAPIプロバイダー",
+      "description": "この端末で使用できるAPIの接続先。"
+    },
+    "apiKeyHelper": {
+      "label": "API認証コマンド",
+      "description": "API認証情報を取得する独自コマンド。"
+    },
+    "awsAuthRefresh": {
+      "label": "AWS認証の更新コマンド",
+      "description": "期限切れのBedrock認証を更新するコマンド。"
+    },
+    "awsCredentialExport": {
+      "label": "AWS認証の取得コマンド",
+      "description": "Bedrock用の認証情報をJSONで返すコマンド。"
+    },
+    "forceLoginMethod": {
+      "label": "ログイン方式の制限",
+      "description": "利用可能なログイン方式を指定します。"
+    },
+    "forceLoginGatewayUrl": {
+      "label": "ログイン先ゲートウェイ",
+      "description": "ログイン画面が接続するゲートウェイのURL。"
+    },
+    "forceLoginOrgUUID": {
+      "label": "ログイン組織の制限",
+      "description": "claude.aiへのログイン先を組織IDで制限します。"
+    },
+    "gatewayInternalNetworks": {
+      "label": "ゲートウェイの内部ネットワーク",
+      "description": "ログインで使用する内部ネットワーク範囲。"
+    },
+    "gcpAuthRefresh": {
+      "label": "Google Cloud認証の更新",
+      "description": "Google Cloudの認証情報を更新するコマンド。"
+    },
+    "otelHeadersHelper": {
+      "label": "テレメトリー認証ヘッダー",
+      "description": "OpenTelemetryのヘッダーを取得するコマンド。"
+    },
+    "autoUpdatesChannel": {
+      "label": "自動更新のチャンネル",
+      "description": "安定版など、追従する更新チャンネル。"
+    },
+    "minimumVersion": {
+      "label": "自動更新の最低バージョン",
+      "description": "自動更新で導入できるバージョンの下限。"
+    },
+    "requiredMaximumVersion": {
+      "label": "起動可能な最大バージョン",
+      "description": "許可されたバージョンより新しければ起動しません。"
+    },
+    "requiredMinimumVersion": {
+      "label": "起動に必要な最低バージョン",
+      "description": "指定バージョンより古ければ起動しません。"
+    },
+    "browserExternalPageTools": {
+      "label": "外部ページでのブラウザーツール",
+      "description": "Desktopのブラウザーで外部ページのツール利用を制御します。"
+    },
+    "disableBrowserExternalNavigation": {
+      "label": "外部ページへの移動禁止",
+      "description": "Desktopのブラウザーの移動先をlocalhostに限定します。"
+    },
+    "disableMobileSimulatorTools": {
+      "label": "モバイルシミュレーターの利用禁止",
+      "description": "DesktopのiOSシミュレーター用ツールを禁止します。"
+    },
+    "cleanupPeriodDays": {
+      "label": "会話履歴の保存日数",
+      "description": "保存期間を過ぎた会話の記録を削除します。"
+    },
+    "desktopSessionCleanupPeriodDays": {
+      "label": "Desktopの履歴保存日数",
+      "description": "DesktopとCoworkの会話記録の保存期間。"
+    },
+    "feedbackDrafts": {
+      "label": "フィードバックの下書き",
+      "description": "確認待ちのフィードバックを下書きとして蓄積します。"
+    },
+    "feedbackSurveyRate": {
+      "label": "品質アンケートの表示頻度",
+      "description": "セッションの品質を尋ねる頻度。"
+    },
+    "skipWebFetchPreflight": {
+      "label": "Web取得の事前確認を省略",
+      "description": "WebFetchの接続先ホスト確認を省略します。"
+    },
+    "disableSideloadFlags": {
+      "label": "起動時の外部定義読み込み禁止",
+      "description": "起動引数によるプラグインなどの読み込みを拒否します。"
+    },
+    "forceRemoteSettingsRefresh": {
+      "label": "管理設定の更新を待って起動",
+      "description": "サーバーの管理設定を更新してから起動します。"
+    },
+    "managedSourcesBehavior": {
+      "label": "管理設定の合成方法",
+      "description": "複数の管理者設定を合成するか、優先する1つを使うか指定します。"
+    },
+    "parentSettingsBehavior": {
+      "label": "ホストからの制限の扱い",
+      "description": "SDKやIDEから渡された制限を管理設定で扱う方法。"
+    },
+    "policyHelper": {
+      "label": "管理ポリシー生成コマンド",
+      "description": "起動時に管理者設定を計算する外部プログラム。"
+    },
+    "policyHelper.path": {
+      "label": "ポリシー生成の実行ファイル",
+      "description": "管理者設定を生成する実行ファイル。"
+    },
+    "policyHelper.refreshIntervalMs": {
+      "label": "ポリシーの更新間隔",
+      "description": "外部プログラムによる管理設定の再取得間隔。"
+    },
+    "policyHelper.timeoutMs": {
+      "label": "ポリシー生成の待ち時間",
+      "description": "管理者設定を生成するプログラムの実行時間の上限。"
+    },
+    "wslInheritsWindowsSettings": {
+      "label": "WSLでWindows管理設定を継承",
+      "description": "Windows側の管理ポリシーをWSLへ読み込みます。"
+    },
+    "autoConnectIde": {
+      "label": "IDEへの自動接続",
+      "description": "実行中のVS CodeやJetBrainsのIDEへ接続します。"
+    },
+    "autoInstallIdeExtension": {
+      "label": "IDE拡張の自動インストール",
+      "description": "VS Codeの端末でIDE拡張を自動導入します。"
+    },
+    "claudeInChromeDefaultEnabled": {
+      "label": "起動時のChrome連携",
+      "description": "セッション開始時にChrome連携を有効にします。"
+    },
+    "copyFullResponse": {
+      "label": "応答全体をコピー",
+      "description": "コピー操作で選択画面を開かず応答全体をコピーします。"
+    },
+    "copyOnSelect": {
+      "label": "選択した文字列を自動コピー",
+      "description": "マウスで選択した文字列をコピーします。"
+    },
+    "defaultToAgentsView": {
+      "label": "起動時にエージェント一覧を表示",
+      "description": "引数なしで起動するときに会話の代わりに一覧を開きます。"
+    },
+    "diffTool": {
+      "label": "差分を開くツール",
+      "description": "変更差分を端末やIDEの差分画面で表示します。"
+    },
+    "externalEditorContext": {
+      "label": "外部エディターへ直前の応答を追加",
+      "description": "外部エディターで入力を編集するときの参考コメント。"
+    },
+    "leftArrowOpensAgents": {
+      "label": "左矢印でエージェント一覧を開く",
+      "description": "左矢印でセッションを背景へ移して一覧を開きます。"
+    },
+    "permissionExplainerEnabled": {
+      "label": "権限確認の説明（廃止）",
+      "description": "コマンド説明の操作とともに廃止された設定です。"
+    },
+    "prStatusFooterEnabled": {
+      "label": "PR状態の表示",
+      "description": "入力欄の下にPRのレビュー状態を表示します。"
+    },
+    "teammateDefaultModel": {
+      "label": "チームの既定モデル（廃止）",
+      "description": "チームメンバーのモデル指定に関する旧設定です。"
+    }
+  },
+  "codex": {
+    "model": {
+      "label": "モデル",
+      "description": "会話で使用するモデル。"
+    },
+    "review_model": {
+      "label": "レビュー用モデル",
+      "description": "レビュー機能で使うモデル。"
+    },
+    "model_provider": {
+      "label": "モデルプロバイダー",
+      "description": "model_providersに登録した接続先。"
+    },
+    "openai_base_url": {
+      "label": "OpenAI APIの接続先",
+      "description": "組み込みOpenAIプロバイダーのベースURL。"
+    },
+    "model_context_window": {
+      "label": "コンテキストの上限",
+      "description": "モデルが扱えるコンテキストのトークン数。"
+    },
+    "model_auto_compact_token_limit": {
+      "label": "会話の自動圧縮しきい値",
+      "description": "会話の使用トークンがこの数に達すると圧縮します。"
+    },
+    "model_auto_compact_token_limit_scope": {
+      "label": "圧縮しきい値の集計範囲",
+      "description": "全コンテキストと、引き継いだ先頭部分を除く範囲のどちらを数えるか。"
+    },
+    "model_catalog_json": {
+      "label": "モデル一覧のJSONファイル",
+      "description": "起動時に読み込むモデルカタログ。"
+    },
+    "oss_provider": {
+      "label": "ローカルモデルの接続先",
+      "description": "ローカルのOSSモデルに使うプロバイダー。"
+    },
+    "approval_policy": {
+      "label": "実行の承認ポリシー",
+      "description": "コマンドを実行する前に承認を求める方法。"
+    },
+    "approvals_reviewer": {
+      "label": "承認のレビュー担当",
+      "description": "引き上げられた承認要求の審査先。"
+    },
+    "allow_login_shell": {
+      "label": "ログインシェルの許可",
+      "description": "シェルツールがログインシェルを起動できるか指定します。"
+    },
+    "sandbox_mode": {
+      "label": "サンドボックスの実行範囲",
+      "description": "コマンドのファイル操作などに許可する範囲。"
+    },
+    "notify": {
+      "label": "外部の通知コマンド",
+      "description": "利用者への通知時に起動するコマンド。"
+    },
+    "check_for_update_on_startup": {
+      "label": "起動時の更新確認",
+      "description": "起動時に新しいバージョンを確認します。"
+    },
+    "instructions": {
+      "label": "システム指示",
+      "description": "モデルへ渡すシステムの指示。"
+    },
+    "developer_instructions": {
+      "label": "開発者指示",
+      "description": "developerロールでモデルへ渡す追加の指示。"
+    },
+    "log_dir": {
+      "label": "ログの保存先",
+      "description": "ログファイルを書き込むディレクトリ。"
+    },
+    "sqlite_home": {
+      "label": "状態DBの保存先",
+      "description": "SQLiteの状態データベースを保存するディレクトリ。"
+    },
+    "compact_prompt": {
+      "label": "会話圧縮の指示",
+      "description": "会話履歴を圧縮するときに使うプロンプト。"
+    },
+    "model_instructions_file": {
+      "label": "モデル指示のファイル",
+      "description": "選択モデルの組み込み指示を置き換えるファイル。"
+    },
+    "personality": {
+      "label": "応答スタイル（非推奨）",
+      "description": "現行資料ではfriendlyとpragmaticによるスタイル選択は廃止されています。"
+    },
+    "service_tier": {
+      "label": "サービス階層",
+      "description": "リクエストで指定する処理のサービス階層。"
+    },
+    "experimental_compact_prompt_file": {
+      "label": "会話圧縮の指示ファイル",
+      "description": "会話圧縮用プロンプトを読み込むファイル。"
+    },
+    "hooks": {
+      "label": "ライフサイクルのフック",
+      "description": "イベントで実行するフックと利用者の上書き設定。"
+    },
+    "mcp_optional_startup_grace_ms": {
+      "label": "任意MCPの起動猶予",
+      "description": "起動時のツール一覧構築で任意MCPサーバーを待つ時間。"
+    },
+    "agents": {
+      "label": "複数エージェントの設定",
+      "description": "エージェントの起動数などの設定。"
+    },
+    "suppress_unstable_features_warning": {
+      "label": "開発中機能の警告を省略",
+      "description": "不安定な機能に関する警告の表示を抑えます。"
+    },
+    "model_reasoning_effort": {
+      "label": "推論レベル",
+      "description": "モデルが推論に使う強度。"
+    },
+    "plan_mode_reasoning_effort": {
+      "label": "計画モードの推論レベル",
+      "description": "planモードで使う推論の強度。"
+    },
+    "model_reasoning_summary": {
+      "label": "推論の要約",
+      "description": "モデルの推論要約の出力方法。"
+    },
+    "model_verbosity": {
+      "label": "応答の詳しさ",
+      "description": "モデルの文章をどの程度詳しくするか指定します。"
+    },
+    "model_supports_reasoning_summaries": {
+      "label": "推論要約への対応",
+      "description": "使用モデルが推論要約に対応するか指定します。"
+    },
+    "project_root_markers": {
+      "label": "プロジェクトの目印",
+      "description": "親ディレクトリからプロジェクトの境界を見つける目印。"
+    },
+    "project_doc_max_bytes": {
+      "label": "指示文の最大サイズ",
+      "description": "環境から読み込むプロジェクト指示の合計サイズ上限。"
+    },
+    "project_doc_fallback_filenames": {
+      "label": "代替の指示ファイル名",
+      "description": "AGENTS.mdがない場合に探すファイル名と順序。"
+    },
+    "tool_output_token_limit": {
+      "label": "ツール出力のトークン上限",
+      "description": "コンテキストへ保存するツール出力の上限。"
+    },
+    "background_terminal_max_timeout": {
+      "label": "背景コマンドの出力待ち上限",
+      "description": "実行中の端末出力を1回の確認で待つ最大時間。"
+    },
+    "file_opener": {
+      "label": "ファイルを開くアプリ",
+      "description": "ファイル参照を開くURI方式。"
+    },
+    "tui": {
+      "label": "端末UIの設定",
+      "description": "端末画面の表示と操作。"
+    },
+    "hide_agent_reasoning": {
+      "label": "推論表示を省略",
+      "description": "エージェントの推論イベントを表示しません。"
+    },
+    "show_raw_agent_reasoning": {
+      "label": "推論の生データ表示",
+      "description": "推論の生イベントを画面や出力へ表示します。"
+    },
+    "disable_paste_burst": {
+      "label": "貼り付け検出の無効化（旧形式）",
+      "description": "端末UIの貼り付け検出に関する旧設定。"
+    },
+    "windows_wsl_setup_acknowledged": {
+      "label": "WSL案内の確認状態",
+      "description": "WindowsでのWSL初期設定案内の確認状態。"
+    },
+    "chatgpt_base_url": {
+      "label": "ChatGPTの接続先",
+      "description": "ChatGPTへのリクエストで使うベースURL。"
+    },
+    "cli_auth_credentials_store": {
+      "label": "CLI認証情報の保存方式",
+      "description": "CLIの認証情報を保存するバックエンド。"
+    },
+    "mcp_oauth_credentials_store": {
+      "label": "MCP認証情報の保存方式",
+      "description": "MCPのOAuth認証情報の保存先。"
+    },
+    "mcp_oauth_callback_port": {
+      "label": "OAuthのコールバックポート",
+      "description": "MCPのOAuth認証で使うローカルHTTPポート。"
+    },
+    "mcp_oauth_callback_url": {
+      "label": "OAuthのコールバックURL",
+      "description": "MCPのOAuth認証で使うリダイレクト先。"
+    },
+    "experimental_use_unified_exec_tool": {
+      "label": "統合実行ツール（実験的）",
+      "description": "統合されたコマンド実行ツールの利用設定。"
+    },
+    "web_search": {
+      "label": "Web検索の方式",
+      "description": "Web検索の無効化やキャッシュ・ライブ検索などの方式。"
+    },
+    "default_permissions": {
+      "label": "既定の権限プロファイル",
+      "description": "標準で適用する名前付き権限プロファイル。"
+    },
+    "forced_login_method": {
+      "label": "ログイン方式の制限",
+      "description": "利用可能な認証方式を制限します。"
+    },
+    "forced_chatgpt_workspace_id": {
+      "label": "ログイン先ワークスペースの制限",
+      "description": "ChatGPTのログイン先をワークスペースIDで制限します。"
+    },
+    "allow_symlinked_codex_home": {
+      "label": "設定保存先のリンク追跡",
+      "description": "macOSの書き込み許可範囲で設定先のシンボリックリンクを追跡します。"
+    },
+    "analytics": {
+      "label": "利用分析",
+      "description": "この端末のCodex製品での分析データ収集。"
+    },
+    "apps": {
+      "label": "アプリ連携",
+      "description": "アプリごとの利用制御。"
+    },
+    "apps_mcp_product_sku": {
+      "label": "アプリ連携の製品識別子",
+      "description": "ホスト側のApps MCPリクエストに渡す製品SKU。"
+    },
+    "audio": {
+      "label": "音声デバイス",
+      "description": "リアルタイム音声で使用する端末の入出力デバイス。"
+    },
+    "auto_review": {
+      "label": "自動承認レビュー",
+      "description": "承認を審査するguardianへの方針や指示。"
+    },
+    "browser_use": {
+      "label": "ブラウザー操作",
+      "description": "ブラウザー操作ツールに関する設定。"
+    },
+    "cloud": {
+      "label": "クラウド機能",
+      "description": "クラウド側で扱う機能の設定。"
+    },
+    "computer_use": {
+      "label": "コンピューター操作",
+      "description": "コンピューター操作ツールに関する設定。"
+    },
+    "daybreak": {
+      "label": "Daybreakの既定値",
+      "description": "新しいスレッドなどに適用するDaybreakの設定。"
+    },
+    "desktop": {
+      "label": "デスクトップアプリの設定",
+      "description": "config.tomlと一緒に保存されるデスクトップ設定。"
+    },
+    "experimental_realtime_start_instructions": {
+      "label": "リアルタイムの開始指示（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_realtime_webrtc_call_base_url": {
+      "label": "WebRTC通話の接続先（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_realtime_ws_backend_prompt": {
+      "label": "リアルタイムのバックエンド指示（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_realtime_ws_base_url": {
+      "label": "リアルタイムWSの接続先（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_realtime_ws_model": {
+      "label": "リアルタイムWSのモデル（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_realtime_ws_startup_context": {
+      "label": "リアルタイムWSの初期コンテキスト（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "experimental_thread_store": {
+      "label": "スレッド保存（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "features": {
+      "label": "機能フラグ",
+      "description": "機能ごとの有効・無効と追加設定。"
+    },
+    "feedback": {
+      "label": "フィードバック収集",
+      "description": "Codex製品のフィードバック収集。"
+    },
+    "ghost_snapshot": {
+      "label": "旧スナップショットの互換設定",
+      "description": "従来形式の設定ファイルを読み込むための互換項目。"
+    },
+    "goals": {
+      "label": "目標の設定",
+      "description": "目標に関する設定。"
+    },
+    "history": {
+      "label": "会話履歴",
+      "description": "ローカル履歴の保存方法。"
+    },
+    "include_apps_instructions": {
+      "label": "アプリ指示の追加",
+      "description": "アプリに関する指示ブロックを会話へ追加します。"
+    },
+    "include_collaboration_mode_instructions": {
+      "label": "共同作業モードの指示を追加",
+      "description": "共同作業モードの指示を会話へ追加します。"
+    },
+    "include_environment_context": {
+      "label": "環境情報の追加",
+      "description": "実行環境の情報をコンテキストへ追加します。"
+    },
+    "include_environment_context_time": {
+      "label": "現在日時・タイムゾーンの追加",
+      "description": "環境情報に日時とタイムゾーンを含めます。"
+    },
+    "include_permissions_instructions": {
+      "label": "権限に関する指示の追加",
+      "description": "権限の指示ブロックを会話へ追加します。"
+    },
+    "marketplaces": {
+      "label": "マーケットプレイス",
+      "description": "名前ごとに登録するプラグイン配布元。"
+    },
+    "mcp_enterprise_managed_auth": {
+      "label": "管理者のMCP認証",
+      "description": "MCPサーバーとプラグインが共有する組織の認証基盤。"
+    },
+    "mcp_servers": {
+      "label": "MCPサーバー",
+      "description": "ツールの呼び出し先となるMCPサーバーの定義。"
+    },
+    "memories": {
+      "label": "メモリ",
+      "description": "会話をまたいだ記憶の設定。"
+    },
+    "model_post_turn_compact_threshold_percent": {
+      "label": "応答後の圧縮しきい値",
+      "description": "最終応答後に会話を圧縮するコンテキスト使用率。"
+    },
+    "model_providers": {
+      "label": "独自のモデルプロバイダー",
+      "description": "追加のAPI接続先を定義します。"
+    },
+    "notice": {
+      "label": "製品内の案内表示",
+      "description": "製品内で表示するお知らせの状態。"
+    },
+    "orchestrator": {
+      "label": "オーケストレーター",
+      "description": "オーケストレーター側の機能設定。"
+    },
+    "otel": {
+      "label": "OpenTelemetry",
+      "description": "テレメトリーの出力方式と送信先。"
+    },
+    "permissions": {
+      "label": "名前付き権限プロファイル",
+      "description": "名前を付けて切り替える実行権限の定義。"
+    },
+    "plugins": {
+      "label": "プラグイン",
+      "description": "配布元とプラグインIDごとの設定。"
+    },
+    "profile": {
+      "label": "選択する設定レイヤー",
+      "description": "読み込む名前付き設定レイヤー。"
+    },
+    "profiles": {
+      "label": "名前付き設定レイヤー",
+      "description": "設定を切り替える名前付きレイヤーの定義。"
+    },
+    "projects": {
+      "label": "プロジェクトごとの設定",
+      "description": "各プロジェクトの信頼状態など。"
+    },
+    "realtime": {
+      "label": "リアルタイム機能（実験的）",
+      "description": "公式スキーマでは実験用・使用非推奨の項目です。"
+    },
+    "responses_api_metadata": {
+      "label": "APIリクエストのメタデータ",
+      "description": "Responses APIのリクエストへ付ける製品側のメタデータ。"
+    },
+    "sandbox_workspace_write": {
+      "label": "作業領域への書き込み権限",
+      "description": "workspace-writeモードでの追加の隔離設定。"
+    },
+    "shell_environment_policy": {
+      "label": "シェルの環境変数ポリシー",
+      "description": "コマンドへ引き継ぐ環境変数を制御します。"
+    },
+    "skills": {
+      "label": "スキルの設定",
+      "description": "SKILL.mdのパスごとのスキル設定。"
+    },
+    "thread_unload_delay_secs": {
+      "label": "スレッドの解放待ち時間",
+      "description": "購読も操作もないスレッドを解放するまでの秒数。"
+    },
+    "tool_suggest": {
+      "label": "追加ツールの導入候補",
+      "description": "インストールを提案できる追加のツール。"
+    },
+    "tools": {
+      "label": "ツールの設定",
+      "description": "ツール別の機能設定。"
+    },
+    "windows": {
+      "label": "Windowsの設定",
+      "description": "Windows環境に固有の設定。"
+    },
+    "tui.notifications": {
+      "label": "端末の通知",
+      "description": "端末で通知するイベントや有効・無効。"
+    },
+    "tui.notification_method": {
+      "label": "端末通知の方式",
+      "description": "端末に通知を届ける方式。"
+    },
+    "tui.notification_condition": {
+      "label": "通知する条件",
+      "description": "どの状態で通知するかを指定します。"
+    },
+    "tui.animations": {
+      "label": "画面のアニメーション",
+      "description": "端末画面のアニメーション。"
+    },
+    "tui.alternate_screen": {
+      "label": "端末の別画面",
+      "description": "端末の代替画面バッファーの利用方式。"
+    },
+    "tui.auto_recap": {
+      "label": "会話の自動要約表示",
+      "description": "会話に戻ったときの要約表示。"
+    },
+    "tui.status_line": {
+      "label": "ステータス行",
+      "description": "画面下部に表示する情報。"
+    },
+    "tui.terminal_title": {
+      "label": "端末のタイトル",
+      "description": "端末タイトルに使う項目。"
+    },
+    "tui.theme": {
+      "label": "端末の配色テーマ",
+      "description": "画面に適用する配色。"
+    },
+    "tui.keymap": {
+      "label": "キー割り当て",
+      "description": "端末UIの場面と操作に対応するキー。"
+    },
+    "tui.keymap.<context>.<action>": {
+      "label": "場面・操作ごとのキー割り当て",
+      "description": "任意の操作に割り当てるキー。"
+    },
+    "tui.keymap.<context>.<action> = []": {
+      "label": "キー割り当ての解除",
+      "description": "操作に割り当てたキーを空の配列で解除します。"
+    },
+    "tui.copy_on_select": {
+      "label": "選択した文字列をコピー",
+      "description": "選択した文字列をクリップボードへコピーします。"
+    },
+    "tui.fullscreen_transcript": {
+      "label": "会話履歴の全画面表示",
+      "description": "会話履歴を全画面で表示します。"
+    },
+    "tui.effects": {
+      "label": "端末の視覚効果",
+      "description": "端末の表示で使う視覚効果。"
+    },
+    "agents.max_concurrent_threads_per_session": {
+      "label": "同時エージェント数の上限",
+      "description": "1セッションで同時に開けるエージェントスレッド数。"
+    },
+    "agents.max_depth": {
+      "label": "エージェントの最大階層",
+      "description": "V1エージェントの入れ子の深さ。V2では使いません。"
+    },
+    "agents.default_subagent_model": {
+      "label": "サブエージェントの既定モデル",
+      "description": "個別指定のないサブエージェントに使うモデル。"
+    },
+    "agents.default_subagent_reasoning_effort": {
+      "label": "サブエージェントの既定推論レベル",
+      "description": "個別指定のないサブエージェントの推論強度。"
+    },
+    "history.persistence": {
+      "label": "会話履歴の保存方式",
+      "description": "会話履歴を保存するか指定します。"
+    },
+    "history.max_bytes": {
+      "label": "会話履歴の最大サイズ",
+      "description": "履歴ファイルのサイズ上限。"
+    },
+    "sandbox_workspace_write.network_access": {
+      "label": "ネットワーク接続の許可",
+      "description": "workspace-write環境でのネットワークアクセス。"
+    },
+    "sandbox_workspace_write.writable_roots": {
+      "label": "追加の書き込み許可先",
+      "description": "作業領域以外に書き込みを許可するパス。"
+    },
+    "sandbox_workspace_write.exclude_slash_tmp": {
+      "label": "一時領域を許可対象から除外",
+      "description": "/tmpを標準の書き込み許可対象から除きます。"
+    },
+    "sandbox_workspace_write.exclude_tmpdir_env_var": {
+      "label": "環境変数の一時領域を除外",
+      "description": "TMPDIRの指す場所を標準の書き込み許可対象から除きます。"
+    },
+    "shell_environment_policy.inherit": {
+      "label": "引き継ぐ環境変数",
+      "description": "子シェルへ継承する環境変数の範囲。"
+    },
+    "shell_environment_policy.exclude": {
+      "label": "除外する環境変数",
+      "description": "継承する環境変数から除くパターン。"
+    },
+    "shell_environment_policy.include_only": {
+      "label": "許可した環境変数だけ継承",
+      "description": "指定したパターンに一致する環境変数だけを継承します。"
+    },
+    "shell_environment_policy.set": {
+      "label": "追加する環境変数",
+      "description": "子シェルへ明示的に渡す環境変数。"
+    },
+    "shell_environment_policy.ignore_default_excludes": {
+      "label": "標準の除外ルールを使わない",
+      "description": "環境変数の既定の除外パターンを無視します。"
+    },
+    "features.multi_agent": {
+      "label": "複数エージェント機能",
+      "description": "複数エージェントの機能フラグ。"
+    },
+    "features.multi_agent_v2": {
+      "label": "複数エージェントV2",
+      "description": "V2の複数エージェント機能フラグ。"
+    },
+    "features.shell_snapshot": {
+      "label": "シェル環境のスナップショット",
+      "description": "シェル環境の状態を再利用する機能。"
+    },
+    "features.unified_exec": {
+      "label": "統合コマンド実行",
+      "description": "統合されたコマンド実行ツールの機能フラグ。"
+    },
+    "features.fast_mode": {
+      "label": "高速モード",
+      "description": "高速モードの機能フラグ。"
+    },
+    "features.ultrafast_mode": {
+      "label": "超高速モード",
+      "description": "超高速モードの機能フラグ。"
+    },
+    "features.memories": {
+      "label": "メモリ機能",
+      "description": "メモリ機能の有効・無効。"
+    },
+    "features.hooks": {
+      "label": "フック機能",
+      "description": "フック機能の有効・無効。"
+    },
+    "features.code_mode": {
+      "label": "コードモード",
+      "description": "コードモードの機能設定。"
+    },
+    "features.network_proxy": {
+      "label": "ネットワークプロキシ",
+      "description": "ネットワークプロキシの機能設定。"
+    },
+    "features.rollout_budget": {
+      "label": "ロールアウトの予算",
+      "description": "ロールアウト予算に関する機能設定。"
+    },
+    "features.async_compaction": {
+      "label": "非同期の会話圧縮",
+      "description": "非同期圧縮の機能設定。"
+    },
+    "features.apps": {
+      "label": "アプリ連携機能",
+      "description": "アプリ連携の機能フラグ。"
+    },
+    "features.goals": {
+      "label": "目標機能",
+      "description": "目標を扱う機能フラグ。"
+    },
+    "features.personality": {
+      "label": "応答スタイルの機能",
+      "description": "応答スタイルの機能フラグ。"
+    },
+    "features.prevent_idle_sleep": {
+      "label": "作業中のスリープ防止",
+      "description": "作業中に端末がスリープすることを防ぐ機能。"
+    },
+    "approval_policy.granular.sandbox_approval": {
+      "label": "シェル権限の承認要求",
+      "description": "隔離範囲の拡張などで承認を求めることを許可します。"
+    },
+    "approval_policy.granular.rules": {
+      "label": "実行ルールによる承認要求",
+      "description": "実行ルールが指定した確認画面を許可します。"
+    },
+    "approval_policy.granular.mcp_elicitations": {
+      "label": "MCPからの確認要求",
+      "description": "MCPが利用者へ情報や確認を求めることを許可します。"
+    },
+    "approval_policy.granular.request_permissions": {
+      "label": "権限要求ツールの確認",
+      "description": "権限要求ツールによる確認画面を許可します。"
+    },
+    "approval_policy.granular.skill_approval": {
+      "label": "スキル実行の承認要求",
+      "description": "スキルのスクリプト実行時に確認することを許可します。"
+    },
+    "auto_review.policy": {
+      "label": "自動レビューの追加方針",
+      "description": "guardianの指示に追加する承認審査の方針。"
+    },
+    "auto_review.extra_policy": {
+      "label": "自動レビューの追加テンプレート",
+      "description": "Guardianテンプレートの追加方針欄へ挿入する文。"
+    },
+    "feedback.enabled": {
+      "label": "フィードバック収集の有効化",
+      "description": "送信と背景レビューの保存を制御します。手動の書き出しは残ります。"
+    },
+    "analytics.enabled": {
+      "label": "利用分析の有効化",
+      "description": "標準の利用分析を制御します。独自のOTLP送信は別設定です。"
+    },
+    "skills.max_context_tokens": {
+      "label": "スキル一覧のトークン上限",
+      "description": "利用可能なスキル一覧に使うコンテキスト量。"
+    },
+    "skills.config.<index>.path": {
+      "label": "対象スキルのパス",
+      "description": "設定を適用するSKILL.mdのパス。"
+    },
+    "apps.<id>.enabled": {
+      "label": "アプリの有効化",
+      "description": "指定したアプリを利用候補に表示するか指定します。"
+    },
+    "apps._default.enabled": {
+      "label": "アプリの既定の有効状態",
+      "description": "個別の指定がないアプリの有効・無効。"
+    },
+    "apps._default.destructive_enabled": {
+      "label": "破壊的なアプリツールの既定値",
+      "description": "destructive_hint付きのツールを標準で許可するか指定します。"
+    },
+    "apps._default.open_world_enabled": {
+      "label": "外部へ作用するアプリツールの既定値",
+      "description": "open_world_hint付きのツールを標準で許可するか指定します。"
+    },
+    "apps._default.approvals_reviewer": {
+      "label": "アプリ承認の既定の審査先",
+      "description": "個別指定がないアプリの承認レビュー先。"
+    },
+    "apps._default.default_tools_approval_mode": {
+      "label": "アプリツールの既定の承認方式",
+      "description": "個別指定がないツールの承認方法。"
+    },
+    "apps.<id>.destructive_enabled": {
+      "label": "アプリの破壊的ツールを許可",
+      "description": "このアプリのdestructive_hint付きツールを許可します。"
+    },
+    "apps.<id>.open_world_enabled": {
+      "label": "アプリの外部操作を許可",
+      "description": "このアプリのopen_world_hint付きツールを許可します。"
+    },
+    "apps.<id>.default_tools_enabled": {
+      "label": "アプリ内ツールの既定値",
+      "description": "このアプリのツールを標準で有効にするか指定します。"
+    },
+    "apps.<id>.approvals_reviewer": {
+      "label": "アプリ承認の審査先",
+      "description": "このアプリの承認要求を審査する担当。"
+    },
+    "apps.<id>.tools.<tool>.enabled": {
+      "label": "アプリ内のツールを有効化",
+      "description": "指定したアプリの個別ツールを有効・無効にします。"
+    },
+    "mcp_servers.<id>.auth": {
+      "label": "MCPの保存済み認証を利用",
+      "description": "保存されているOAuth認証情報を使います。ログイン開始は別の操作です。"
+    },
+    "mcp_servers.<id>.command": {
+      "label": "MCPの起動コマンド",
+      "description": "標準入出力で接続するMCPサーバーを起動するコマンド。"
+    },
+    "mcp_servers.<id>.args": {
+      "label": "MCPの起動引数",
+      "description": "MCPサーバーの起動コマンドへ渡す引数。"
+    },
+    "mcp_servers.<id>.env": {
+      "label": "MCPの環境変数",
+      "description": "MCPサーバーのプロセスへ追加する環境変数。"
+    },
+    "mcp_servers.<id>.url": {
+      "label": "MCPの接続先URL",
+      "description": "HTTP方式のMCPサーバーへ接続するURL。"
+    },
+    "mcp_servers.<id>.enabled": {
+      "label": "MCPサーバーの有効化",
+      "description": "このMCPサーバーを起動・接続するか指定します。"
+    },
+    "mcp_servers.<id>.oauth.client_id": {
+      "label": "MCP OAuthのクライアントID",
+      "description": "認可とトークン交換で使う登録済みのクライアントID。"
+    },
+    "mcp_servers.<id>.oauth.client_secret": {
+      "label": "MCP OAuthのクライアント秘密情報",
+      "description": "登録済みのOAuthクライアントでトークン交換に使う秘密情報。"
+    },
+    "mcp_servers.<id>.oauth.callback_url": {
+      "label": "MCP OAuthのリダイレクト先",
+      "description": "OAuthクライアントに登録したコールバックURL。"
+    },
+    "mcp_servers.<id>.oauth.callback_port": {
+      "label": "MCP OAuthの待受けポート",
+      "description": "MCP全体の設定より優先するコールバックポート。"
+    },
+    "mcp_servers.<id>.tools.<tool>.output_token_limit": {
+      "label": "MCPツールの出力上限",
+      "description": "このツールの出力に割り当てるトークン数。"
+    },
+    "agents.enabled": {
+      "label": "複数エージェントの有効化",
+      "description": "複数エージェントのツールを有効にします。V2の機能フラグが優先されます。"
+    },
+    "agents.interrupt_message": {
+      "label": "割り込みをモデルへ記録",
+      "description": "ターンを中断したときにモデル向けのメッセージを記録します。"
+    },
+    "agents.<name>.description": {
+      "label": "エージェントの役割説明",
+      "description": "エージェントを起動するときに提示する役割の説明。"
+    },
+    "agents.<name>.config_file": {
+      "label": "エージェント別の設定ファイル",
+      "description": "この役割のエージェントに適用する設定ファイル。"
+    },
+    "memories.generate_memories": {
+      "label": "メモリの生成",
+      "description": "新しい会話からメモリを生成するか指定します。"
+    },
+    "memories.use_memories": {
+      "label": "メモリの利用",
+      "description": "メモリの利用指示を会話に追加するか指定します。"
+    },
+    "memories.disable_on_external_context": {
+      "label": "外部コンテキストでのメモリ制限",
+      "description": "外部の情報を含む会話をメモリ用に区別します。"
+    },
+    "memories.max_raw_memories_for_consolidation": {
+      "label": "統合前のメモリ保持数",
+      "description": "全体のメモリ統合に残す直近の生メモリの上限。"
+    },
+    "memories.max_unused_days": {
+      "label": "未使用メモリの有効日数",
+      "description": "最後に使った日から統合対象として残す日数。"
+    },
+    "memories.max_rollout_age_days": {
+      "label": "メモリ元の会話の最大日数",
+      "description": "メモリ生成に利用する会話の古さの上限。"
+    },
+    "memories.max_rollouts_per_startup": {
+      "label": "メモリ処理の対象数",
+      "description": "1回の処理で候補にする会話記録の上限。"
+    },
+    "memories.min_rollout_idle_hours": {
+      "label": "メモリ生成までの待機時間",
+      "description": "会話の最後の操作からメモリ生成までに必要な時間。"
+    },
+    "memories.min_rate_limit_remaining_percent": {
+      "label": "メモリ生成に必要な利用残量",
+      "description": "メモリ処理を開始するために必要な利用枠の残り割合。"
+    },
+    "memories.extract_model": {
+      "label": "メモリ抽出用のモデル",
+      "description": "会話の要約に使うモデル。"
+    },
+    "memories.consolidation_model": {
+      "label": "メモリ統合用のモデル",
+      "description": "抽出したメモリの統合に使うモデル。"
+    },
+    "model_providers.<id>": {
+      "label": "モデルプロバイダーの定義",
+      "description": "名前付きのAPI接続先の設定。"
+    },
+    "model_providers.<id>.name": {
+      "label": "プロバイダーの表示名",
+      "description": "この接続先の分かりやすい表示名。"
+    },
+    "model_providers.<id>.base_url": {
+      "label": "プロバイダーの接続先",
+      "description": "OpenAI互換APIのベースURL。"
+    },
+    "model_providers.<id>.model_catalog_url": {
+      "label": "プロバイダーのモデル一覧URL",
+      "description": "Codex形式のモデル一覧を取得するURL。"
+    },
+    "model_providers.<id>.capabilities.external_web_access": {
+      "label": "外部Web検索への対応",
+      "description": "接続先が提供するWeb検索で実際のWebへアクセスできるか指定します。"
+    },
+    "model_providers.<id>.capabilities.remote_compaction": {
+      "label": "接続先の会話圧縮への対応",
+      "description": "接続先の圧縮処理とローカル圧縮の対応設定。"
+    },
+    "model_providers.<id>.env_key": {
+      "label": "APIキーの環境変数",
+      "description": "この接続先のAPIキーを入れた環境変数名。"
+    },
+    "model_providers.<id>.env_key_instructions": {
+      "label": "APIキーの設定案内",
+      "description": "APIキーの取得・環境変数設定のための案内文。"
+    },
+    "model_providers.<id>.experimental_bearer_token": {
+      "label": "接続先の認証トークン",
+      "description": "Bearer認証に使う値。通常は環境変数による設定を使います。"
+    },
+    "model_providers.<id>.requires_openai_auth": {
+      "label": "OpenAI認証の要求",
+      "description": "OpenAI APIキーやChatGPTログインが必要か指定します。"
+    },
+    "model_providers.<id>.wire_api": {
+      "label": "APIの通信形式",
+      "description": "このプロバイダーで使用するAPI形式。"
+    },
+    "model_providers.<id>.query_params": {
+      "label": "接続先のクエリ引数",
+      "description": "APIのURLへ追加するクエリ引数。"
+    },
+    "model_providers.<id>.http_headers": {
+      "label": "追加するHTTPヘッダー",
+      "description": "この接続先へのリクエストに追加するヘッダー。"
+    },
+    "model_providers.<id>.env_http_headers": {
+      "label": "環境変数から追加するヘッダー",
+      "description": "HTTPヘッダーの値を取得する環境変数名。"
+    },
+    "model_providers.<id>.request_max_retries": {
+      "label": "APIリクエストの再試行上限",
+      "description": "HTTPリクエストが失敗したときに再試行する回数。"
+    },
+    "model_providers.<id>.stream_max_retries": {
+      "label": "ストリームの再接続上限",
+      "description": "応答ストリームが切れたときに再接続する回数。"
+    },
+    "model_providers.<id>.stream_idle_timeout_ms": {
+      "label": "ストリームの無通信待ち時間",
+      "description": "応答ストリームの切断と判定するまでの無通信時間。"
+    },
+    "model_providers.<id>.supports_websockets": {
+      "label": "WebSocket通信への対応",
+      "description": "Responses APIのWebSocket通信に対応するか指定します。"
+    },
+    "model_providers.<id>.supports_standalone_web_search": {
+      "label": "独立したWeb検索への対応",
+      "description": "独立したWeb検索のエンドポイントに対応するか指定します。"
+    },
+    "model_providers.<id>.auth": {
+      "label": "コマンドによるAPI認証",
+      "description": "外部コマンドでAPI接続先の認証トークンを取得します。"
+    },
+    "model_providers.<id>.auth.command": {
+      "label": "認証トークンの取得コマンド",
+      "description": "接続先の認証トークンを取得する外部コマンド。"
+    },
+    "model_providers.<id>.auth.args": {
+      "label": "認証コマンドの引数",
+      "description": "トークン取得コマンドへ渡す引数。"
+    },
+    "model_providers.<id>.auth.timeout_ms": {
+      "label": "認証コマンドの待ち時間",
+      "description": "トークン取得コマンドの終了を待つ上限。"
+    },
+    "model_providers.<id>.auth.refresh_interval_ms": {
+      "label": "認証トークンの更新間隔",
+      "description": "キャッシュしたトークンを再取得する間隔。"
+    },
+    "model_providers.<id>.auth.cwd": {
+      "label": "認証コマンドの作業場所",
+      "description": "トークン取得コマンドを実行するディレクトリ。"
+    },
+    "otel.environment": {
+      "label": "テレメトリーの環境名",
+      "description": "トレースに付ける開発・本番などの環境名。"
+    },
+    "otel.exporter": {
+      "label": "ログの送信方式",
+      "description": "ログの出力先と送信方式。"
+    },
+    "otel.trace_exporter": {
+      "label": "トレースの送信方式",
+      "description": "トレースの出力先と送信方式。"
+    },
+    "otel.metrics_exporter": {
+      "label": "メトリクスの送信方式",
+      "description": "メトリクスの出力先。独自OTLP送信は標準の利用分析とは別設定です。"
+    },
+    "otel.log_user_prompt": {
+      "label": "入力をトレースに記録",
+      "description": "利用者のプロンプト本文をトレースに記録するか指定します。"
+    },
+    "tui.disable_paste_burst": {
+      "label": "貼り付け検出の無効化",
+      "description": "入力を貼り付けとしてまとめず、文字ごとに挿入します。"
+    },
+    "tui.resume_cwd": {
+      "label": "再開時の作業ディレクトリ",
+      "description": "会話を再開・分岐するときに使う作業ディレクトリ。"
+    },
+    "tui.vim_mode_default": {
+      "label": "起動時のVimモード",
+      "description": "入力欄をVimのNormalモードで開始します。"
+    },
+    "tui.raw_output_mode": {
+      "label": "コピー向けの履歴表示",
+      "description": "会話履歴をコピーしやすい生のスクロール表示で開始します。"
+    },
+    "tui.show_tooltips": {
+      "label": "起動時の操作ヒント",
+      "description": "端末UIの開始画面で操作のヒントを表示します。"
+    },
+    "tui.show_server_version_notice": {
+      "label": "サーバーのバージョン案内",
+      "description": "接続先サーバーとのバージョン差に関する案内を表示します。"
+    },
+    "marketplaces.<name>.source": {
+      "label": "マーケットプレイスの取得元",
+      "description": "配布元を登録したときの取得先。"
+    },
+    "marketplaces.<name>.ref": {
+      "label": "配布元のGitリビジョン",
+      "description": "Git方式で取得するブランチやタグなど。"
+    },
+    "marketplaces.<name>.sparse_paths": {
+      "label": "配布元の取得対象パス",
+      "description": "Git方式で一部だけ取得するときのパス。"
+    },
+    "plugins.<plugin>.enabled": {
+      "label": "プラグインの有効化",
+      "description": "このプラグインを有効・無効にします。未設定では導入時の既定に従います。"
+    },
+    "plugins.<plugin>.mcp_servers.<server>.enabled": {
+      "label": "プラグイン内のMCPを有効化",
+      "description": "プラグインに含まれるMCPサーバーを起動するか指定します。"
+    },
+    "plugins.<plugin>.mcp_servers.<server>.enabled_tools": {
+      "label": "プラグインMCPの許可ツール",
+      "description": "このMCPサーバーが公開するツールの許可リスト。"
+    }
+  },
+  "segments": {
+    "enabled": "有効化",
+    "disabled": "無効化",
+    "name": "名前",
+    "description": "説明",
+    "path": "パス",
+    "paths": "パス一覧",
+    "url": "URL",
+    "command": "起動コマンド",
+    "args": "引数",
+    "env": "環境変数",
+    "env_vars": "環境変数",
+    "env_http_headers": "環境変数からのHTTPヘッダー",
+    "http_headers": "HTTPヘッダー",
+    "headers": "ヘッダー",
+    "cwd": "作業ディレクトリ",
+    "startup_timeout_sec": "起動の待ち時間（秒）",
+    "startup_timeout_ms": "起動の待ち時間（ミリ秒）",
+    "tool_timeout_sec": "ツールの待ち時間（秒）",
+    "enabled_tools": "許可するツール",
+    "disabled_tools": "禁止するツール",
+    "bearer_token_env_var": "認証トークンの環境変数",
+    "required": "起動必須",
+    "scopes": "認証スコープ",
+    "client_id": "クライアントID",
+    "client_secret_env_var": "クライアント秘密情報の環境変数",
+    "callback_url": "コールバックURL",
+    "base_url": "接続先URL",
+    "request_max_retries": "リクエストの最大再試行回数",
+    "stream_max_retries": "ストリームの最大再試行回数",
+    "stream_idle_timeout_ms": "ストリームの無通信待ち時間",
+    "wire_api": "APIの通信形式",
+    "requires_openai_auth": "OpenAI認証の要求",
+    "supports_websockets": "WebSocketへの対応",
+    "websocket_connect_timeout_ms": "WebSocket接続の待ち時間",
+    "experimental_bearer_token": "認証トークン（実験的）",
+    "env_key": "APIキーの環境変数",
+    "env_key_instructions": "APIキーの設定案内",
+    "query_params": "URLのクエリ引数",
+    "config_file": "設定ファイル",
+    "nickname_candidates": "名前の候補",
+    "interrupt_message": "割り込みメッセージ",
+    "config": "設定",
+    "default": "既定値",
+    "_default": "既定値",
+    "include": "含める項目",
+    "exclude": "除外する項目",
+    "mode": "動作方式",
+    "timeout_ms": "待ち時間（ミリ秒）",
+    "timeout_sec": "待ち時間（秒）",
+    "timeout_secs": "待ち時間（秒）",
+    "max_age_days": "保存する最大日数",
+    "max_raw_memories_for_consolidation": "統合するメモリ数の上限",
+    "max_rollout_age_days": "会話記録の最大日数",
+    "max_rollouts_per_startup": "起動ごとに処理する記録数",
+    "min_rollout_idle_hours": "処理対象までの待機時間",
+    "generate_memories": "メモリの生成",
+    "use_memories": "メモリの利用",
+    "max_threads": "スレッド数の上限",
+    "model": "モデル",
+    "reasoning_effort": "推論レベル",
+    "sandbox_mode": "サンドボックス",
+    "approval_policy": "承認ポリシー",
+    "network": "ネットワーク",
+    "filesystem": "ファイル操作",
+    "network_access": "ネットワーク接続",
+    "allow_local_binding": "ローカルの待受け許可",
+    "allow_upstream_proxy": "上位プロキシの許可",
+    "enable_socks5": "SOCKS5の有効化",
+    "enable_socks5_udp": "SOCKS5 UDPの有効化",
+    "domains": "ドメイン",
+    "allowed_domains": "許可ドメイン",
+    "denied_domains": "禁止ドメイン",
+    "unix_sockets": "Unixソケット",
+    "proxy_url": "プロキシURL",
+    "socks_url": "SOCKSプロキシURL",
+    "analytics": "利用分析",
+    "apps": "アプリ連携",
+    "audio": "音声",
+    "browser_use": "ブラウザー操作",
+    "computer_use": "コンピューター操作",
+    "chat": "会話",
+    "shell": "シェル",
+    "shell_tool": "シェルツール",
+    "web_search": "Web検索",
+    "web_search_cached": "キャッシュによるWeb検索",
+    "web_search_request": "Web検索リクエスト",
+    "image": "画像",
+    "image_query": "画像検索",
+    "view_image": "画像表示",
+    "image_generation": "画像生成",
+    "video": "動画",
+    "terminal": "端末",
+    "terminal_title": "端末タイトル",
+    "notifications": "通知",
+    "animations": "アニメーション",
+    "vim_mode_default": "既定のVimモード",
+    "raw_output_mode": "生の出力表示",
+    "disable_paste_burst": "貼り付け検出の無効化",
+    "show_tooltips": "操作ヒントの表示",
+    "show_server_version_notice": "サーバーバージョンの案内",
+    "resume_cwd": "再開時の作業ディレクトリ",
+    "keymap": "キー割り当て",
+    "agents": "エージェント一覧",
+    "composer": "入力欄",
+    "global": "全体操作",
+    "transcript": "会話履歴",
+    "history": "履歴",
+    "diff": "差分",
+    "approval": "承認",
+    "plan": "計画",
+    "search": "検索",
+    "picker": "選択画面",
+    "archive": "アーカイブ",
+    "delete": "削除",
+    "fork": "分岐",
+    "hide": "非表示",
+    "open": "開く",
+    "close": "閉じる",
+    "toggle": "切り替え",
+    "next": "次へ",
+    "previous": "前へ",
+    "up": "上へ",
+    "down": "下へ",
+    "left": "左へ",
+    "right": "右へ",
+    "submit": "送信",
+    "cancel": "キャンセル",
+    "confirm": "確定",
+    "copy": "コピー",
+    "paste": "貼り付け",
+    "cut": "切り取り",
+    "undo": "元に戻す",
+    "redo": "やり直す",
+    "newline": "改行",
+    "clear": "消去",
+    "select_all": "すべて選択",
+    "scroll_up": "上へスクロール",
+    "scroll_down": "下へスクロール",
+    "page_up": "前のページ",
+    "page_down": "次のページ",
+    "home": "先頭へ",
+    "end": "末尾へ",
+    "rename": "名前変更",
+    "resume": "再開",
+    "new_thread": "新しいスレッド",
+    "new_session": "新しいセッション",
+    "help": "ヘルプ",
+    "quit": "終了",
+    "focus": "フォーカス",
+    "input_device": "入力デバイス",
+    "output_device": "出力デバイス",
+    "input_device_name": "入力デバイス名",
+    "output_device_name": "出力デバイス名",
+    "exporter": "出力方式",
+    "trace_exporter": "トレースの出力方式",
+    "metrics_exporter": "メトリクスの出力方式",
+    "log_user_prompt": "利用者の入力を記録",
+    "environment": "環境名",
+    "endpoint": "送信先",
+    "protocol": "通信方式",
+    "tls": "TLS",
+    "ca_certificate": "CA証明書",
+    "client_certificate": "クライアント証明書",
+    "client_private_key": "クライアント秘密鍵",
+    "dangerously_allow_non_loopback_proxy": "ループバック外のプロキシ許可",
+    "dangerously_allow_all_unix_sockets": "全Unixソケットの許可",
+    "sampling_token_weight": "サンプリングトークンの重み",
+    "prefill_token_weight": "入力トークンの重み",
+    "limit_tokens": "トークン予算の上限",
+    "reminder_interval_tokens": "予算通知のトークン間隔",
+    "excluded_tool_namespaces": "除外するツール名前空間",
+    "direct_only_tool_namespaces": "直接呼び出すツール名前空間",
+    "experimental_mode": "実験モード",
+    "trust_level": "信頼レベル",
+    "<name>": "任意の名前",
+    "<path>": "対象パス",
+    "<id>": "対象ID",
+    "<plugin>": "プラグイン",
+    "<marketplace>": "配布元",
+    "<context>": "操作する場面",
+    "<action>": "操作名",
+    "<model>": "モデル名",
+    "<index>": "配列の位置",
+    "*": "任意の項目"
+  }
+}

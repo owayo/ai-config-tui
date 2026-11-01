@@ -438,6 +438,96 @@ fn choose(app: &mut App, label: &str) {
 }
 
 #[test]
+fn setting_names_and_explanations_are_searchable_and_render_without_writing_configs() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    app.query = "会話の自動圧縮".into();
+    let field = app
+        .rows()
+        .into_iter()
+        .find(|field| field.key() == "autoCompactEnabled")
+        .unwrap();
+    assert_eq!(field.label, "会話の自動圧縮");
+    assert!(field.description.contains("コンテキストの上限"));
+    assert!(field.value.is_none());
+    assert!(!app.config().unwrap().dirty());
+
+    app.query = "autoCompactEnabled".into();
+    let mut terminal = Terminal::new(TestBackend::new(180, 42)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let mut screen = String::new();
+    for row in terminal.backend().buffer().content.chunks(180) {
+        let mut column = 0;
+        while column < row.len() {
+            let symbol = row[column].symbol();
+            screen.push_str(symbol);
+            column += unicode_width::UnicodeWidthStr::width(symbol).max(1);
+        }
+        screen.push('\n');
+    }
+    assert!(screen.contains("autoCompactEnabled"), "{screen}");
+    assert!(screen.contains("会話の自動圧縮"), "{screen}");
+    assert!(screen.contains("コンテキストの上限"), "{screen}");
+    assert!(!screen.contains("公式リファレンスに記載されている設定です。"));
+
+    app.query.clear();
+    app.handle_key(key(KeyCode::Char(']')));
+    app.query = "コンテキストの上限".into();
+    let field = app
+        .rows()
+        .into_iter()
+        .find(|field| field.key() == "model_context_window")
+        .unwrap();
+    assert_eq!(field.label, "コンテキストの上限");
+    assert!(field.description.contains("トークン数"));
+    assert!(!app.config().unwrap().dirty());
+    assert!(!fixture.path(".claude").exists());
+    assert!(!fixture.path(".codex").exists());
+}
+
+#[test]
+fn dynamic_settings_keep_their_display_names_and_original_paths_when_edited() {
+    let fixture = Fixture::new();
+    let mut config = fixture.config(
+        Provider::Codex,
+        "[mcp_servers.work]\ncommand = 'tool-before'\n",
+    );
+    let field = fields::fields(&config)
+        .into_iter()
+        .find(|field| field.key() == "mcp_servers.work.command")
+        .unwrap();
+    assert_eq!(field.label, "MCPの起動コマンド");
+    assert!(field.description.contains("標準入出力"));
+    config.set(&field.path, "tool-next", true).unwrap();
+    assert!(config.text.contains("[mcp_servers.work]"));
+    assert!(config.text.contains("tool-next"));
+    assert!(!config.text.contains("起動コマンド"));
+}
+
+#[test]
+fn localized_help_matches_official_keys_and_unknown_children_do_not_borrow_parent_explanations() {
+    let text: serde_json::Value =
+        serde_json::from_str(include_str!("../data/settings-help.ja.json")).unwrap();
+    for (provider, name) in [(Provider::Claude, "claude"), (Provider::Codex, "codex")] {
+        for (key, help) in text[name].as_object().unwrap() {
+            assert!(
+                crate::catalog::entries(provider)
+                    .iter()
+                    .any(|entry| entry.key == *key),
+                "setting help has no official key: {name}.{key}"
+            );
+            assert!(!help["label"].as_str().unwrap().is_empty());
+            assert!(!help["description"].as_str().unwrap().is_empty());
+        }
+    }
+    let (name, description) = crate::catalog::help(Provider::Codex, "tui.futureURL");
+    assert_eq!(name, "端末UIの設定 / Future URL");
+    assert!(description.is_empty());
+    let (name, _) = crate::catalog::help(Provider::Codex, "tui.keymap.agents.archive");
+    assert_eq!(name, "キー割り当て / エージェント一覧 / アーカイブ");
+}
+
+#[test]
 fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_files() {
     let fixture = Fixture::new();
     let mut app = fixture.app();
