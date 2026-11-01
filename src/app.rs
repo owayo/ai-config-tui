@@ -30,6 +30,12 @@ pub enum Focus {
 }
 
 pub enum Modal {
+    Select {
+        field: Box<Field>,
+        options: Vec<PickOption>,
+        state: ListState,
+        error: Option<String>,
+    },
     Edit {
         editor: Editor,
         path: Option<Vec<String>>,
@@ -50,6 +56,18 @@ pub enum Modal {
         scroll: u16,
     },
     Help,
+}
+
+pub struct PickOption {
+    pub label: String,
+    pub value: PickValue,
+}
+
+pub enum PickValue {
+    Unset,
+    Value(serde_json::Value),
+    Keep,
+    Custom,
 }
 
 pub enum Action {
@@ -267,6 +285,66 @@ impl App {
         };
         let apply = key.code == KeyCode::Char('s') && key.modifiers.contains(KeyModifiers::CONTROL);
         match &mut modal {
+            Modal::Select {
+                field,
+                options,
+                state,
+                error,
+            } => {
+                if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
+                    return;
+                }
+                let index = state.selected().unwrap_or(0);
+                match key.code {
+                    KeyCode::Up | KeyCode::Char('k') => state.select(Some(index.saturating_sub(1))),
+                    KeyCode::Down | KeyCode::Char('j') => {
+                        state.select(Some((index + 1).min(options.len() - 1)))
+                    }
+                    KeyCode::PageUp => state.select(Some(index.saturating_sub(10))),
+                    KeyCode::PageDown => state.select(Some((index + 10).min(options.len() - 1))),
+                    KeyCode::Home => state.select(Some(0)),
+                    KeyCode::End => state.select(Some(options.len() - 1)),
+                    KeyCode::Enter | KeyCode::Char(' ') => match &options[index].value {
+                        PickValue::Keep => {
+                            self.message("現在の値を保持しました", false);
+                            return;
+                        }
+                        PickValue::Custom => {
+                            self.open_editor(field);
+                            return;
+                        }
+                        value => {
+                            let result = if let Some(config) = self.config_mut() {
+                                match value {
+                                    PickValue::Unset => config.remove(&field.path),
+                                    PickValue::Value(value) => {
+                                        let input = value
+                                            .as_str()
+                                            .map(String::from)
+                                            .unwrap_or_else(|| value.to_string());
+                                        config.set(&field.path, &input, value.is_string())
+                                    }
+                                    PickValue::Custom | PickValue::Keep => unreachable!(),
+                                }
+                            } else {
+                                bail_result("設定ファイルを読み込めません")
+                            };
+                            match result {
+                                Ok(()) => {
+                                    self.message(
+                                        "変更を反映しました。Ctrl+Sでファイルへ保存します",
+                                        false,
+                                    );
+                                    self.clamp_selection();
+                                    return;
+                                }
+                                Err(problem) => *error = Some(format!("{problem:#}")),
+                            }
+                        }
+                    },
+                    _ => {}
+                }
+            }
             Modal::Edit {
                 editor,
                 path,
@@ -433,25 +511,92 @@ impl App {
         let Some(field) = self.current_field() else {
             return;
         };
+        if let Some(reason) = field.disabled_reason() {
+            self.message(reason, true);
+            return;
+        }
         if field.kind == Kind::Document {
             self.edit_document();
             return;
         }
-        let text = field.value.clone().unwrap_or_else(|| match field.kind {
-            Kind::Bool => "false".into(),
-            Kind::Raw if self.profiles.items[self.selected].provider == Provider::Claude => {
-                if field.key().starts_with("permissions.") {
-                    "[]".into()
-                } else {
-                    "{}".into()
+        if !field.choices.is_empty() {
+            let mut options = vec![PickOption {
+                label: "未設定（このキーを削除）".into(),
+                value: PickValue::Unset,
+            }];
+            let mut selected = 0;
+            for value in &field.choices {
+                let label = value
+                    .as_str()
+                    .map(String::from)
+                    .unwrap_or_else(|| value.to_string());
+                if field.value.as_deref() == Some(&label) {
+                    selected = options.len();
+                }
+                options.push(PickOption {
+                    label,
+                    value: PickValue::Value(value.clone()),
+                });
+            }
+            if field.value.is_some() && selected == 0 {
+                let current = field.value.clone().unwrap_or_default();
+                selected = options.len();
+                options.push(PickOption {
+                    label: format!("現在の値: {current}（候補外）"),
+                    value: PickValue::Keep,
+                });
+            }
+            if field.custom {
+                options.push(PickOption {
+                    label: "任意の値を入力…".into(),
+                    value: PickValue::Custom,
+                });
+            }
+            self.modal = Some(Modal::Select {
+                field: Box::new(field),
+                options,
+                state: ListState::default().with_selected(Some(selected)),
+                error: None,
+            });
+            return;
+        }
+        self.open_editor(&field);
+    }
+
+    fn open_editor(&mut self, field: &Field) {
+        let text = field.value.clone().unwrap_or_else(|| {
+            if !field.initial.is_empty() {
+                field.initial.clone()
+            } else {
+                match field.kind {
+                    Kind::Bool => "false".into(),
+                    Kind::Raw
+                        if self.profiles.items[self.selected].provider == Provider::Claude =>
+                    {
+                        if field.key().starts_with("permissions.") {
+                            "[]".into()
+                        } else {
+                            "{}".into()
+                        }
+                    }
+                    Kind::Raw => "true".into(),
+                    _ => String::new(),
                 }
             }
-            Kind::Raw => "true".into(),
-            _ => String::new(),
         });
+        let text = if field.kind == Kind::Raw
+            && field
+                .choices
+                .iter()
+                .any(|value| value.as_str() == Some(&text))
+        {
+            serde_json::to_string(&text).unwrap_or(text)
+        } else {
+            text
+        };
         self.modal = Some(Modal::Edit {
             editor: Editor::new(&text),
-            path: Some(field.path),
+            path: Some(field.path.clone()),
             plain: field.kind == Kind::String,
             title: format!("{} · {}", field.label, field.suggestions),
             error: None,
@@ -475,6 +620,10 @@ impl App {
         else {
             return;
         };
+        if let Some(reason) = field.disabled_reason() {
+            self.message(reason, true);
+            return;
+        }
         if let Some(config) = self.config_mut() {
             let result = config.set(
                 &field.path,

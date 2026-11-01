@@ -14,10 +14,18 @@ Rust 1.89以降と、日本語・UTF-8を表示できる端末が必要です。
 ```sh
 cargo run --locked
 
-# インストールして使う場合
-cargo install --path . --locked
+# /usr/local/binへインストール
+make install
 ai-config-tui
+
+# インストール先を変更する場合
+make install INSTALL_PATH="$HOME/.local/bin"
+
+# 指定先のバイナリを削除（設定ファイルは保持）
+make uninstall INSTALL_PATH="$HOME/.local/bin"
 ```
+
+`make install`はリリースビルド後にバイナリを配置します。上書き時は同じディレクトリの一時ファイルから置き換えます。`make help`でターゲット一覧を確認できます。Cargoで管理する場合は`cargo install --path . --locked`も使えます。
 
 ## 操作
 
@@ -39,7 +47,19 @@ ai-config-tui
 | `r` / `h` | 再読み込み / 値のマスク切替 |
 | `?` / `q` | ヘルプ / 終了 |
 
-編集画面では`Ctrl+S`で変更を反映し、`Esc`でキャンセルします。文字列は引用符なし、配列などはJSON・TOMLで入力します。ファイルへの保存は、編集画面を閉じた後に`Ctrl+S`を押して確定します。
+モデル・権限モード・テーマ・真偽値などは、`Enter`で候補を開き、`↑↓`と`Enter`で選びます。Claudeのモデルは`opus`・`sonnet`・`haiku`などから選択できます。モデルIDや任意の文字列には自由入力も使えます。利用可能なモデルや推論レベルは、契約・CLI・プロバイダーによって異なります。
+
+選択画面の「未設定」はキーの削除、`Esc`は変更なしです。既定値の表示は公式資料の値で、他の設定ファイルを合成した実効値ではありません。
+
+テキストの編集画面では`Ctrl+S`で変更を反映し、`Esc`でキャンセルします。文字列は引用符なし、配列などはJSON・TOMLで入力します。ファイルへの保存は、編集画面を閉じた後に`Ctrl+S`を押して確定します。
+
+## 公式設定の一覧
+
+2026年11月1日に確認した公式資料を基に、Claudeの247項目、Codexの953項目の定義を同梱しています。CodexはリファレンスとJSONスキーマを合わせた一覧です。未設定の項目も表示し、詳細ペインに適用範囲・出典・参照日を示します。設定先を開くだけでは、未設定のキーをファイルに書き込みません。
+
+管理者専用、別ファイル向け、廃止済みの設定は参照表示です。名前が可変の項目は`<name>`などのテンプレートで表示し、設定済みの項目は具体名でも表示します。新しい名前の定義には`E`の全体編集を使えます。
+
+一覧の更新は`make catalog`です。Python 3.11以降とcurlで公式資料を取得し、キー・型・選択肢・適用範囲と取得元のSHA-256を[data/settings-catalog.json](data/settings-catalog.json)へ保存します。通常の起動・ビルドでは同梱データを使います。
 
 ## 設定先の追加
 
@@ -75,5 +95,5 @@ ai-config-tui profile remove Work
 
 ```sh
 make check
-cargo build --release --locked
+make build
 ```

@@ -145,7 +145,7 @@ fn literal_dots_in_keys_are_not_split_into_paths() {
     );
     let field = fields::fields(&config)
         .into_iter()
-        .find(|field| field.path.last().unwrap() == "trust_level")
+        .find(|field| field.path.last().unwrap() == "trust_level" && !field.template)
         .unwrap();
     assert_eq!(
         field.path,
@@ -342,6 +342,8 @@ fn app_preserves_drafts_across_profiles_and_requires_confirmation_to_save_or_qui
     let fixture = Fixture::new();
     let mut app = fixture.app();
     app.handle_key(key(KeyCode::Enter));
+    app.handle_key(key(KeyCode::End));
+    app.handle_key(key(KeyCode::Enter));
     let Some(Modal::Edit { editor, .. }) = &mut app.modal else {
         panic!()
     };
@@ -410,4 +412,239 @@ fn tui_renders_all_dialogs_and_responsive_sizes() {
     }
     app.focus = Focus::Settings;
     assert!(matches!(app.documents[0], Loaded::Ready(_)));
+}
+
+fn select_field(app: &mut App, name: &str) {
+    app.query.clear();
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.key() == name && !field.template)
+        .unwrap();
+    app.table_state.select(Some(index));
+    app.handle_key(key(KeyCode::Enter));
+}
+
+fn choose(app: &mut App, label: &str) {
+    let Some(Modal::Select { options, state, .. }) = &mut app.modal else {
+        panic!("expected selection dialog")
+    };
+    let index = options
+        .iter()
+        .position(|option| option.label == label)
+        .unwrap();
+    state.select(Some(index));
+    app.handle_key(key(KeyCode::Enter));
+}
+
+#[test]
+fn official_catalog_includes_unset_settings_scopes_and_models_without_creating_files() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    assert!(app.rows().len() >= 247);
+    for name in [
+        "theme",
+        "outputStyle",
+        "autoUpdatesChannel",
+        "sandbox.enabled",
+        "keybindingFlavor",
+    ] {
+        let field = app
+            .rows()
+            .into_iter()
+            .find(|field| field.key() == name)
+            .unwrap();
+        assert!(field.value.is_none());
+        assert!(field.source.starts_with("https://code.claude.com/"));
+        assert!(!field.choices.is_empty(), "missing choices for {name}");
+    }
+    let model = app
+        .rows()
+        .into_iter()
+        .find(|field| field.key() == "model")
+        .unwrap();
+    assert!(model.choices.contains(&serde_json::json!("opus")));
+    assert!(model.choices.contains(&serde_json::json!("sonnet")));
+    assert!(model.choices.contains(&serde_json::json!("haiku")));
+    let model_settings = app
+        .rows()
+        .into_iter()
+        .find(|field| field.key() == "modelSettings")
+        .unwrap();
+    assert_eq!(model_settings.kind, crate::fields::Kind::Raw);
+    assert!(model_settings.choices.is_empty());
+    assert_eq!(
+        app.rows()
+            .into_iter()
+            .find(|field| field.key() == "spinnerVerbs")
+            .unwrap()
+            .initial,
+        "{}"
+    );
+    app.handle_key(key(KeyCode::Char(']')));
+    assert!(app.rows().len() >= 302);
+    assert_eq!(
+        app.rows()
+            .into_iter()
+            .find(|field| field.key() == "tui.keymap.<context>.<action>")
+            .unwrap()
+            .kind,
+        crate::fields::Kind::Raw
+    );
+    for name in [
+        "tui.alternate_screen",
+        "oss_provider",
+        "web_search",
+        "sandbox_mode",
+    ] {
+        let field = app
+            .rows()
+            .into_iter()
+            .find(|field| field.key() == name)
+            .unwrap();
+        assert!(field.value.is_none());
+        assert!(!field.source.is_empty());
+        assert!(!field.choices.is_empty());
+    }
+    assert!(!fixture.path(".claude").exists());
+    assert!(!fixture.path(".codex").exists());
+    assert_eq!(app.dirty_count(), 0);
+}
+
+#[test]
+fn model_picker_stages_an_alias_and_cancel_preserves_the_existing_value() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    select_field(&mut app, "model");
+    choose(&mut app, "opus");
+    assert!(app.config().unwrap().text.contains("\"model\": \"opus\""));
+    assert!(!fixture.path(".claude/settings.json").exists());
+    select_field(&mut app, "model");
+    let Some(Modal::Select { options, state, .. }) = &app.modal else {
+        panic!()
+    };
+    assert_eq!(options[state.selected().unwrap()].label, "opus");
+    app.handle_key(key(KeyCode::Down));
+    app.handle_key(key(KeyCode::Esc));
+    assert!(app.config().unwrap().text.contains("\"model\": \"opus\""));
+    select_field(&mut app, "model");
+    choose(&mut app, "未設定（このキーを削除）");
+    assert!(!app.config().unwrap().text.contains("model"));
+}
+
+#[test]
+fn selecting_booleans_writes_boolean_values_and_unset_does_not_write_a_default() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    select_field(&mut app, "alwaysThinkingEnabled");
+    choose(&mut app, "false");
+    let Parsed::Json(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+        panic!()
+    };
+    assert_eq!(document["alwaysThinkingEnabled"], false);
+    select_field(&mut app, "alwaysThinkingEnabled");
+    choose(&mut app, "未設定（このキーを削除）");
+    assert_eq!(app.dirty_count(), 0);
+    assert!(!fixture.path(".claude/settings.json").exists());
+}
+
+#[test]
+fn unknown_current_toml_union_value_is_preserved_byte_for_byte() {
+    let fixture = Fixture::new();
+    let original = "[tui]\nnotifications = ['agent-turn-complete'] # preserve quote and comment\n";
+    fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "tui.notifications");
+    let Some(Modal::Select { options, state, .. }) = &app.modal else {
+        panic!()
+    };
+    assert!(
+        options[state.selected().unwrap()]
+            .label
+            .contains("現在の値")
+    );
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.config().unwrap().text, original);
+    assert_eq!(app.dirty_count(), 0);
+    select_field(&mut app, "tui.notifications");
+    choose(&mut app, "false");
+    let Parsed::Toml(document) = app.config().unwrap().parsed.as_ref().unwrap() else {
+        panic!()
+    };
+    assert_eq!(document["tui"]["notifications"].as_bool(), Some(false));
+}
+
+#[test]
+fn existing_named_entries_inherit_their_template_choices_and_sources() {
+    let fixture = Fixture::new();
+    let config = fixture.config(Provider::Codex, "[projects.\"/tmp/work.space\"]\ntrust_level = 'trusted'\n[model_providers.custom]\nbase_url = 'https://example.com/api'\n");
+    let rows = fields::fields(&config);
+    let concrete = rows
+        .iter()
+        .find(|field| field.path == path(&["projects", "/tmp/work.space", "trust_level"]))
+        .unwrap();
+    assert!(!concrete.template);
+    assert!(concrete.disabled_reason().is_none());
+    assert!(!concrete.source.is_empty());
+    assert!(concrete.choices.contains(&serde_json::json!("trusted")));
+    assert!(concrete.choices.contains(&serde_json::json!("untrusted")));
+    let provider = rows
+        .iter()
+        .find(|field| field.key() == "model_provider")
+        .unwrap();
+    assert!(provider.choices.contains(&serde_json::json!("custom")));
+}
+
+#[test]
+fn managed_only_settings_cannot_be_written_by_the_picker_or_space_shortcut() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    select_field(&mut app, "allowManagedHooksOnly");
+    assert!(app.modal.is_none());
+    assert!(app.is_error);
+    app.handle_key(key(KeyCode::Char(' ')));
+    assert_eq!(app.dirty_count(), 0);
+    assert!(app.status.contains("管理者"));
+}
+
+#[test]
+fn model_picker_can_enter_a_provider_specific_id() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    select_field(&mut app, "model");
+    choose(&mut app, "任意の値を入力…");
+    let Some(Modal::Edit { editor, .. }) = &mut app.modal else {
+        panic!()
+    };
+    editor.insert("custom-provider-model", false);
+    app.handle_key(key(KeyCode::Enter));
+    select_field(&mut app, "model");
+    app.handle_key(key(KeyCode::Enter));
+    assert!(app.config().unwrap().text.contains("custom-provider-model"));
+}
+
+#[test]
+fn selection_dialog_renders_and_scrolls_at_the_minimum_terminal_size() {
+    let fixture = Fixture::new();
+    let mut app = fixture.app();
+    select_field(&mut app, "model");
+    let mut terminal = Terminal::new(TestBackend::new(60, 16)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    app.handle_key(key(KeyCode::End));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let buffer = terminal.backend().buffer();
+    let mut content = String::new();
+    for row in buffer.content.chunks(60) {
+        let mut column = 0;
+        while column < row.len() {
+            let symbol = row[column].symbol();
+            content.push_str(symbol);
+            column += unicode_width::UnicodeWidthStr::width(symbol).max(1);
+        }
+        content.push('\n');
+    }
+    assert!(content.contains("任意の値を入力"), "{content}");
+    app.handle_key(key(KeyCode::Enter));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
 }

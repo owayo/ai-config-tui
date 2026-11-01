@@ -11,6 +11,7 @@ use similar::{ChangeTag, TextDiff};
 
 use crate::{
     app::{Action, App, Focus, Loaded, Modal},
+    catalog::CATALOG,
     editor::Editor,
     fields::Kind,
 };
@@ -201,9 +202,10 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     });
     let title = if app.query.is_empty() {
         format!(
-            "{} · {}",
+            "{} · {} · {}項目",
             profile.provider.label(),
-            profile.provider.format()
+            profile.provider.format(),
+            rows.len()
         )
     } else {
         format!("検索: {} · {}件", safe(&app.query), rows.len())
@@ -231,7 +233,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     ];
     if let Some(field) = app.current_field() {
         detail.push(Line::from(Span::styled(
-            field.label,
+            field.label.clone(),
             Style::default().fg(ACCENT).add_modifier(Modifier::BOLD),
         )));
         detail.push(Line::from(safe(&field.description)));
@@ -248,6 +250,18 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
         if !field.suggestions.is_empty() {
             detail.push(Line::from(safe(&field.suggestions)));
         }
+        if !field.choices.is_empty() {
+            detail.push(Line::from(Span::styled(
+                "Enter: 候補から選択",
+                Style::default().fg(ACCENT),
+            )));
+        }
+        if let Some(reason) = field.disabled_reason() {
+            detail.push(Line::from(Span::styled(
+                safe(reason),
+                Style::default().fg(AMBER),
+            )));
+        }
         detail.push(Line::from(""));
         let text = if !app.reveal && secret(&field.path.join(".")) {
             "[hidden] · hで表示".into()
@@ -257,6 +271,20 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 .unwrap_or_else(|| "未設定 · ファイルには書き込みません".into())
         };
         detail.extend(safe(&text).lines().map(|line| Line::from(line.to_owned())));
+        if !field.default_value.is_empty() {
+            detail.push(Line::from(format!(
+                "公式の既定値: {}",
+                safe(&field.default_value)
+            )));
+        }
+        if !field.source.is_empty() {
+            detail.push(Line::from(format!("適用範囲: {}", safe(&field.scope))));
+            detail.push(Line::from(format!("参照日: {}", CATALOG.verified_at)));
+            detail.push(Line::from(Span::styled(
+                safe(&field.source),
+                Style::default().fg(MUTED),
+            )));
+        }
     } else {
         detail.push(Line::from("該当する設定がありません。Escで検索を解除。"));
     }
@@ -282,6 +310,60 @@ fn modal(frame: &mut Frame, app: &mut App) {
         return;
     };
     match &mut modal {
+        Modal::Select {
+            field,
+            options,
+            state,
+            error,
+        } => {
+            let height =
+                (options.len() + 8).min(frame.area().height.saturating_sub(2) as usize) as u16;
+            let area = popup(frame.area(), 80, height);
+            frame.render_widget(Clear, area);
+            frame.render_widget(
+                panel(format!("{} · 候補から選択", safe(&field.label)), true),
+                area,
+            );
+            let parts = Layout::vertical([
+                Constraint::Length(2),
+                Constraint::Min(1),
+                Constraint::Length(2),
+                Constraint::Length(1),
+            ])
+            .split(area.inner(ratatui::layout::Margin::new(2, 1)));
+            frame.render_widget(
+                Paragraph::new(format!(
+                    "{} · ↑↓で選び、Enterで反映\n選択した設定はCtrl+Sでファイルへ保存します。",
+                    safe(&field.key())
+                ))
+                .style(Style::default().fg(MUTED)),
+                parts[0],
+            );
+            let items = options
+                .iter()
+                .map(|option| ListItem::new(safe(&option.label)))
+                .collect::<Vec<_>>();
+            frame.render_stateful_widget(
+                List::new(items)
+                    .highlight_symbol("› ")
+                    .highlight_style(Style::default().bg(SELECTED).fg(ACCENT)),
+                parts[1],
+                state,
+            );
+            if let Some(error) = error {
+                frame.render_widget(
+                    Paragraph::new(safe(error))
+                        .style(Style::default().fg(RED))
+                        .wrap(Wrap { trim: false }),
+                    parts[2],
+                );
+            }
+            frame.render_widget(
+                Paragraph::new("Enter: 反映   Esc: キャンセル   Home/End: 先頭/末尾")
+                    .style(Style::default().fg(AMBER)),
+                parts[3],
+            );
+        }
         Modal::Edit {
             editor,
             title,

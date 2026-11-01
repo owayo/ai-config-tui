@@ -1,11 +1,13 @@
 use crate::{
+    catalog,
     document::{Config, Parsed},
     profile::Provider,
 };
 use serde_json::Value as Json;
 use toml_edit::TableLike;
 
-#[derive(Clone, Debug, PartialEq)]
+#[derive(Clone, Debug, PartialEq, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum Kind {
     String,
     Bool,
@@ -22,6 +24,14 @@ pub struct Field {
     pub suggestions: String,
     pub value: Option<String>,
     pub common: bool,
+    pub choices: Vec<Json>,
+    pub custom: bool,
+    pub scope: String,
+    pub source: String,
+    pub default_value: String,
+    pub read_only: Option<String>,
+    pub initial: String,
+    pub template: bool,
 }
 
 impl Field {
@@ -30,6 +40,11 @@ impl Field {
     }
     pub fn display_value(&self) -> String {
         self.value.as_deref().unwrap_or("未設定").replace('\n', " ")
+    }
+    pub fn disabled_reason(&self) -> Option<&str> {
+        self.read_only.as_deref().or(if self.template {
+            Some("任意の名前を含むテンプレートです。Eの全体編集で具体的な名前を設定してください。既存の項目は具体名でも一覧に表示されます。")
+        } else { None })
     }
 }
 
@@ -194,13 +209,71 @@ pub fn fields(config: &Config) -> Vec<Field> {
             ),
         ],
     };
+    let mut indexes = fields
+        .iter()
+        .enumerate()
+        .map(|(index, field)| (field.key(), index))
+        .collect::<std::collections::HashMap<_, _>>();
+    for entry in catalog::entries(config.provider) {
+        let field = if let Some(&index) = indexes.get(&entry.key) {
+            &mut fields[index]
+        } else {
+            indexes.insert(entry.key.clone(), fields.len());
+            fields.push(preset(
+                &entry.key,
+                &entry.key,
+                "公式リファレンスに記載されている設定です。",
+                entry.kind.clone(),
+                &entry.type_name,
+            ));
+            fields.last_mut().expect("field was pushed")
+        };
+        field.kind = entry.kind.clone();
+        field.choices = entry.choices.clone();
+        field.custom = entry.custom;
+        field.scope = entry.scope.clone();
+        field.source = entry.source.clone();
+        field.default_value = entry.default.clone();
+        field.read_only = entry.read_only.clone();
+        field.initial = entry.initial.clone();
+        field.template = entry.key.contains(['<', '*']);
+    }
     if let Some(parsed) = &config.parsed {
         for field in &mut fields {
             field.value = get_value(parsed, &field.path);
+            if let Parsed::Toml(root) = parsed {
+                let item = field
+                    .path
+                    .iter()
+                    .try_fold(root.as_item(), |item, key| item.get(key));
+                if field.choices.is_empty() && item.is_some_and(toml_edit::Item::is_table) {
+                    field.kind = Kind::Document;
+                }
+            }
         }
         match parsed {
             Parsed::Json(root) => collect_json(root, &[], &mut fields),
             Parsed::Toml(root) => collect_toml(root.as_table(), &[], &mut fields),
+        }
+        // Provider IDs are user-defined and may not be in the reference snapshot.
+        let providers = match parsed {
+            Parsed::Toml(root) => root
+                .get("model_providers")
+                .and_then(toml_edit::Item::as_table_like),
+            _ => None,
+        };
+        if let (Some(providers), Some(field)) = (
+            providers,
+            fields
+                .iter_mut()
+                .find(|field| field.key() == "model_provider"),
+        ) {
+            for (name, _) in providers.iter() {
+                let name = Json::String(name.into());
+                if !field.choices.contains(&name) {
+                    field.choices.push(name);
+                }
+            }
         }
     }
     fields
@@ -211,10 +284,18 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         path: key.split('.').map(String::from).collect(),
         label: label.into(),
         description: description.into(),
-        kind,
+        kind: kind.clone(),
         suggestions: suggestions.into(),
         value: None,
         common: true,
+        choices: Vec::new(),
+        custom: true,
+        scope: String::new(),
+        source: String::new(),
+        default_value: String::new(),
+        read_only: None,
+        initial: String::new(),
+        template: false,
     }
 }
 
@@ -223,10 +304,22 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         label: path.last().cloned().unwrap_or_default(),
         path,
         description: "ファイル内の追加設定。キーと値は元の形式のまま保持されます。".into(),
-        kind,
+        kind: kind.clone(),
         suggestions: String::new(),
         value: Some(value),
         common: false,
+        choices: if kind == Kind::Bool {
+            vec![Json::Bool(true), Json::Bool(false)]
+        } else {
+            Vec::new()
+        },
+        custom: kind != Kind::Bool,
+        scope: "ファイル内の追加設定".into(),
+        source: String::new(),
+        default_value: String::new(),
+        read_only: None,
+        initial: String::new(),
+        template: false,
     }
 }
 
@@ -264,6 +357,13 @@ fn collect_json(value: &Json, prefix: &[String], fields: &mut Vec<Field>) {
         let mut path = prefix.to_vec();
         path.push(key.clone());
         if fields.iter().any(|field| field.path == path) {
+            if value.is_object()
+                && fields
+                    .iter()
+                    .any(|field| field.path.len() > path.len() && field.path.starts_with(&path))
+            {
+                collect_json(value, &path, fields);
+            }
             continue;
         }
         if fields.iter().any(|field| field.path.starts_with(&path)) && value.is_object() {
@@ -278,7 +378,7 @@ fn collect_json(value: &Json, prefix: &[String], fields: &mut Vec<Field>) {
                 .as_str()
                 .map(String::from)
                 .unwrap_or_else(|| serde_json::to_string_pretty(value).unwrap_or_default());
-            fields.push(extra(path, text, kind));
+            append_extra(fields, path, text, kind);
         }
     }
 }
@@ -288,6 +388,9 @@ fn collect_toml(table: &dyn TableLike, prefix: &[String], fields: &mut Vec<Field
         let mut path = prefix.to_vec();
         path.push(key.into());
         if fields.iter().any(|field| field.path == path) {
+            if let Some(table) = value.as_table_like() {
+                collect_toml(table, &path, fields);
+            }
             continue;
         }
         if let Some(table) = value.as_table_like().filter(|table| !table.is_empty()) {
@@ -306,7 +409,28 @@ fn collect_toml(table: &dyn TableLike, prefix: &[String], fields: &mut Vec<Field
                 .as_str()
                 .map(String::from)
                 .unwrap_or_else(|| value.to_string().trim().into());
-            fields.push(extra(path, text, kind));
+            append_extra(fields, path, text, kind);
         }
     }
+}
+
+fn append_extra(fields: &mut Vec<Field>, path: Vec<String>, text: String, kind: Kind) {
+    let template = fields.iter().find(|field| {
+        field.template
+            && field.path.len() == path.len()
+            && field.path.iter().zip(&path).all(|(expected, actual)| {
+                expected == actual || expected.starts_with('<') || expected == "*"
+            })
+    });
+    let field = if let Some(template) = template {
+        let mut field = template.clone();
+        field.path = path;
+        field.label = field.key();
+        field.value = Some(text);
+        field.template = false;
+        field
+    } else {
+        extra(path, text, kind)
+    };
+    fields.push(field);
 }
