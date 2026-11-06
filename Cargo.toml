@@ -2,12 +2,16 @@
 name = "ai-config-tui"
 version = "0.1.0"
 edition = "2024"
-rust-version = "1.89"
+rust-version = "1.99"
 description = "A terminal editor for Claude Code and Codex configuration profiles"
 license = "MIT"
 repository = "https://github.com/owayo/ai-config-tui"
 keywords = ["tui", "claude", "codex", "configuration"]
 categories = ["command-line-utilities", "config"]
+
+[package.metadata.project-standard]
+# TUI の表示と設定の説明が日本語なので、README を日本語の README.md 1 本にする
+readme-languages = ["ja"]
 
 [dependencies]
 anyhow = "1"
@@ -26,5 +30,6 @@ unicode-width = "0.2"
 libc = "0.2"
 
 [profile.release]
-lto = "thin"
+lto = true
+codegen-units = 1
 strip = true

@@ -3,6 +3,10 @@
 debug
 target
 
+# Personal mise overrides
+mise.local.toml
+.mise.local.toml
+
 # Python helper scripts
 __pycache__/
 *.py[cod]

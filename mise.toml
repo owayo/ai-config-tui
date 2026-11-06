@@ -1,0 +1,8 @@
+# このリポジトリのツールチェーン。手元と CI の両方がここを正とする。
+
+[tools]
+# profile と components を明示する。未指定だと rustup の既定の profile 次第で入るものが変わり、
+# GitHub Actions のランナー (minimal) では cargo fmt が無いと言われて落ちる
+rust = { version = "1.99.1", profile = "minimal", components = ["rustfmt", "clippy"] }
+# make catalog (公式資料からカタログを作り直す) と、カタログ生成器のテストが使う
+python = "3.15.1"

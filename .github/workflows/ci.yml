@@ -1,23 +1,106 @@
+# CI: Linux と macOS で make setup と make ci を回し、release.yml と同じ組でビルドする。
+#
+# - quality: Linux と macOS で make setup と make ci だけを呼ぶ (検査の中身は Makefile の ci が決める)
+# - build: release.yml の build と同じ組 (os / target) でビルドする。release.yml の dry_run では build が
+#   走らないので、配布物を作れることはここで確かめる。Windows はここでテストと clippy も回す
 name: CI
 
 on:
   push:
+    branches: [main]
   pull_request:
+    branches: [main]
 
 permissions:
   contents: read
 
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  CARGO_TERM_COLOR: always
+
 jobs:
-  check:
-    strategy:
-      matrix:
-        os: [ubuntu-latest, macos-latest, windows-latest]
+  quality:
+    name: Quality (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # Windows は入れない。ランナーの make は MinGW の mingw32-make の写しで、レシピの POSIX シェル前提
+        # ($$(...) や [ -n ... ]) の解釈に癖がある。Windows のテストは build で cargo を直接呼ぶ
+        os: [ubuntu-latest, macos-latest]
     steps:
-      - uses: actions/checkout@v5
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: actions/checkout@v7
         with:
-          components: rustfmt, clippy
-      - run: cargo fmt --all -- --check
-      - run: cargo clippy --all-targets --locked -- -D warnings
-      - run: cargo test --locked
+          persist-credentials: false
+
+      # ツールの版は mise.toml が正。mise 本体は公開から 14 日以上たった最新の版を、署名付きの checksum で
+      # 確かめて入れる。cache は切る (効いた回だけ clippy / rustfmt が欠ける。jdx/mise-action#215)
+      - uses: jdx/mise-action@v5
+        with:
+          minimum_release_age: 14d
+          cache: false
+
+      # target/ と ~/.cargo のキャッシュ (鍵に rustc の版が入るので、mise.toml の rust を上げると作り直す)
+      - uses: Swatinem/rust-cache@v2
+
+      - run: make setup
+      - run: make ci
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: quality
+    runs-on: ${{ matrix.os }}
+    # python は make catalog とカタログ生成器のテストだけが使う。cargo を直接呼ぶこのジョブには要らない
+    env:
+      MISE_DISABLE_TOOLS: python
+    strategy:
+      fail-fast: false
+      matrix:
+        # release.yml の build と同じ組 (行を足したら両方に足す)。macOS は Apple Silicon だけに配る
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      # Windows のランナーは既定で LF を CRLF に変えて checkout する。release.yml の build と同じく LF のまま取り、
+      # テストの期待値や include_str! で埋め込むファイルの改行を配布物とそろえる
+      - name: Keep LF line endings
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+        with:
+          persist-credentials: false
+
+      # ビルドに効く環境変数 (MACOSX_DEPLOYMENT_TARGET など) は mise.toml の [env] に置く。mise-action が
+      # 後続のステップへ渡すので、ci.yml と release.yml と手元の make で同じ値になる
+      - uses: jdx/mise-action@v5
+        with:
+          minimum_release_age: 14d
+          cache: false
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ matrix.target }}
+
+      # mise.toml の rust はホストのツールチェーンと components だけを入れるので、配布のターゲットを足す
+      - name: Add the Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      # Windows は quality で make ci を回さないので、配る OS の裏付けとしてここでテストする
+      # (Makefile の test が --all-features などを付けているなら同じものを付ける)。--no-fail-fast で、
+      # 最初に落ちたテストの後ろにある失敗もまとめて出す
+      - name: Test (Windows)
+        if: runner.os == 'Windows'
+        run: cargo test --locked --no-fail-fast
+
+      # cfg(unix) で分けたコードがあるので、Windows の側も clippy で確かめる (Makefile の lint と同じフラグ)
+      - name: Lint (Windows)
+        if: runner.os == 'Windows'
+        run: cargo clippy --locked --all-targets -- -D warnings
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}

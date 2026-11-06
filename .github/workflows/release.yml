@@ -1,0 +1,528 @@
+# リリース (Actions > Release > Run workflow): 版を JST の yy.m.counter で決めてタグを付け、全 target を
+# ビルドして GitHub Release に添付し、Homebrew の tap を更新する。dry_run では版の計算だけ。
+# 配る target は macOS (Apple Silicon) と Windows (x64) の 2 つ。build の matrix は ci.yml の build と同じ組に
+# する (dry_run では build が走らないので、配布物を作れることは ci.yml の build で確かめる)。
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: "Dry run (compute the next version only; no commit, tag or release)"
+        type: boolean
+        default: false
+
+# 書き込みはジョブ単位で与える (版のコミットとタグの push、Release の作成)
+permissions:
+  contents: read
+
+# 同時に 2 つのリリースを走らせない (同じ番号を 2 回採る)。走っているものは止めない
+concurrency:
+  group: release
+  cancel-in-progress: false
+
+env:
+  CARGO_TERM_COLOR: always
+  BINARY_NAME: ai-config-tui
+
+jobs:
+  prepare-release:
+    name: Prepare release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      # Check CI on this commit が ci.yml の実行を読む
+      actions: read
+    # push できるジョブなので、cargo update で使わないツール (make catalog 用の python) を取得しない
+    env:
+      MISE_DISABLE_TOOLS: python
+    outputs:
+      version: ${{ steps.bump.outputs.version }}
+      tag: ${{ steps.bump.outputs.tag }}
+    steps:
+      # 本番は既定のブランチからだけ出す (ほかのブランチから出すと、既定のブランチに無いコミットにタグが付く)。
+      # dry_run はどのブランチでも動くので、workflow の変更をブランチで試せる
+      - name: Check the branch
+        if: ${{ !inputs.dry_run }}
+        env:
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          if [ "${GITHUB_REF}" != "refs/heads/${DEFAULT_BRANCH}" ]; then
+            echo "::error::Run the release from ${DEFAULT_BRANCH} (this run is on ${GITHUB_REF})"
+            exit 1
+          fi
+
+      # 本番は ci.yml が通ったコミットからだけ出す。このワークフローは build しか回さないので、テストや
+      # clippy が落ちているコミットでも配布物ができてしまう。push の CI が終わっていない・落ちた・
+      # まだ走っていない (GITHUB_TOKEN で push した版のコミットなど) なら止める
+      - name: Check CI on this commit
+        if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          # 同じコミットの push の ci.yml のうち、いちばん新しい実行の状態と結果
+          RESULT=$(gh run list --repo "${GITHUB_REPOSITORY}" --workflow ci.yml --event push \
+            --commit "${GITHUB_SHA}" --limit 1 --json status,conclusion \
+            --jq '.[0] | "\(.status // "none")/\(.conclusion // "none")"')
+          case "${RESULT}" in
+            completed/success)
+              echo "ci.yml succeeded on ${GITHUB_SHA}"
+              ;;
+            "" | none/*)
+              echo "::error::ci.yml has not run on ${GITHUB_SHA}. Push a commit to ${GITHUB_REF_NAME} and wait for CI before releasing"
+              exit 1
+              ;;
+            completed/*)
+              echo "::error::ci.yml ended with ${RESULT#completed/} on ${GITHUB_SHA}. Fix it (or re-run CI) before releasing"
+              exit 1
+              ;;
+            *)
+              echo "::error::ci.yml is still ${RESULT%%/*} on ${GITHUB_SHA}. Wait for it to succeed before releasing"
+              exit 1
+              ;;
+          esac
+
+      - uses: actions/checkout@v7
+
+      # cargo update を mise.toml の版の Rust で実行する (無いとランナーに最初から入っている Rust で動く)
+      - uses: jdx/mise-action@v5
+        with:
+          minimum_release_age: 14d
+          cache: false
+
+      - name: Bump the version
+        id: bump
+        run: |
+          set -euo pipefail
+          # 版は yy.m.counter。年は 2 桁 (Windows の MSI は major が 255 以下)。月はゼロ埋めしない
+          # (SemVer は数値の先頭の 0 を禁じ、Cargo は 26.08.100 を拒む)。連番は 100 から (桁がそろう)。
+          # 採番は JST で切る。ランナーは UTC なので、素の date では JST の月初 0〜9 時のリリースが
+          # 前の月の連番になる
+          YEAR=$(TZ=Asia/Tokyo date +%y)
+          MONTH=$(TZ=Asia/Tokyo date +%-m)
+          CURRENT=$(awk -F '"' '/^version = /{ print $2; exit }' Cargo.toml)
+          echo "Current version: ${CURRENT}"
+          COUNTER=100
+          if [[ "${CURRENT}" =~ ^([0-9]{2,4})\.([0-9]{1,2})\.([0-9]+)$ ]]; then
+            # 4 桁の年 (2026.9.105) の版からも続けて採番する
+            if [ "${BASH_REMATCH[1]#20}" = "${YEAR}" ] && [ "${BASH_REMATCH[2]}" = "${MONTH}" ]; then
+              COUNTER=$((BASH_REMATCH[3] + 1))
+            fi
+          fi
+          VERSION="${YEAR}.${MONTH}.${COUNTER}"
+          TAG="v${VERSION}"
+          echo "Next version: ${VERSION}"
+
+          if git ls-remote --exit-code --tags origin "refs/tags/${TAG}" > /dev/null; then
+            echo "::error::Tag ${TAG} already exists. Check the version in Cargo.toml against the existing tags (to retry a failed release, use \"Re-run failed jobs\" on that run)"
+            exit 1
+          fi
+
+          # [package] の version (ファイルで最初の `version = ` の行) だけを書き換える (依存の version は触らない)
+          sed -i "0,/^version = \"[^\"]*\"/s//version = \"${VERSION}\"/" Cargo.toml
+          test "$(awk -F '"' '/^version = /{ print $2; exit }' Cargo.toml)" = "${VERSION}"
+          # Cargo.lock は自分のパッケージの版だけを合わせる (lockfile を作り直すと全依存が最新へ
+          # 解決し直され、CI で確かめていない版が配布物に入る)
+          cargo update --workspace
+          git diff --stat
+
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Commit and tag
+        if: ${{ !inputs.dry_run }}
+        env:
+          TAG: ${{ steps.bump.outputs.tag }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          set -euo pipefail
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add Cargo.toml Cargo.lock
+          git commit -m "Release ${TAG}"
+          git tag -a "${TAG}" -m "Release ${TAG}"
+          # ブランチとタグを 1 回で送る。--atomic で、ブランチが先に進んでいて片方だけが通ることを防ぐ
+          git push --atomic origin "HEAD:refs/heads/${DEFAULT_BRANCH}" "refs/tags/${TAG}"
+
+      - name: Dry run
+        if: ${{ inputs.dry_run }}
+        env:
+          TAG: ${{ steps.bump.outputs.tag }}
+        run: |
+          echo "Dry run: would release ${TAG} (no commit, tag or release)"
+          git diff -- Cargo.toml Cargo.lock
+
+  build:
+    name: Build (${{ matrix.target }})
+    needs: prepare-release
+    if: ${{ !inputs.dry_run }}
+    runs-on: ${{ matrix.os }}
+    # python は make catalog とカタログ生成器のテストだけが使う。配布物を作るジョブでは取得しない
+    env:
+      MISE_DISABLE_TOOLS: python
+    outputs:
+      # 添付の数 (matrix の行ごとに 1 つ)。release のジョブが、集めた添付の数と照らす
+      assets: ${{ strategy.job-total }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # ci.yml の build と同じ組。macOS は Apple Silicon だけに配る (Intel の Mac 向けは作らない)
+        include:
+          - os: macos-latest
+            target: aarch64-apple-darwin
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+    steps:
+      # Windows のランナーは既定で LF を CRLF に変えて checkout する。ci.yml の build と同じく LF のまま取り、
+      # include_str! で埋め込むファイルの改行を CI で確かめたものとそろえる
+      - name: Keep LF line endings
+        run: git config --global core.autocrlf false
+
+      - uses: actions/checkout@v7
+        with:
+          ref: ${{ needs.prepare-release.outputs.tag }}
+          persist-credentials: false
+
+      # ビルドのキャッシュ (rust-cache) は使わない。配布物を作るジョブがキャッシュを読むと、キャッシュを
+      # 書けるほかのジョブの汚染が配布物に入る。Rust の版と mise.toml の [env] は mise-action が渡す
+      - uses: jdx/mise-action@v5
+        with:
+          minimum_release_age: 14d
+          cache: false
+
+      # mise.toml の rust はホストのツールチェーンと components だけを入れるので、配布のターゲットを足す
+      - name: Add the Rust target
+        run: rustup target add ${{ matrix.target }}
+
+      - name: Build
+        run: cargo build --release --locked --target ${{ matrix.target }}
+
+      # 添付の名前は <bin>-<target>.tar.gz (Windows は .zip)。中身はバイナリだけを最上位に置く
+      # (Homebrew の formula がこの形を前提にする)
+      - name: Package
+        id: package
+        shell: bash
+        env:
+          TARGET: ${{ matrix.target }}
+          TAR_GZ: ${{ env.BINARY_NAME }}-${{ matrix.target }}.tar.gz
+          ZIP: ${{ env.BINARY_NAME }}-${{ matrix.target }}.zip
+        run: |
+          set -euo pipefail
+          cd "target/${TARGET}/release"
+          if [ "${RUNNER_OS}" = "Windows" ]; then
+            7z a "../../../${ZIP}" "${BINARY_NAME}.exe"
+            echo "asset=${ZIP}" >> "$GITHUB_OUTPUT"
+          else
+            tar -czf "../../../${TAR_GZ}" "${BINARY_NAME}"
+            echo "asset=${TAR_GZ}" >> "$GITHUB_OUTPUT"
+          fi
+
+      # archive: false で添付のファイルをそのまま上げる (artifact の名前はファイル名になる)。zip を展開させない
+      # ため、release のジョブは skip-decompress: true で落とす
+      - uses: actions/upload-artifact@v7
+        with:
+          path: ${{ steps.package.outputs.asset }}
+          archive: false
+          if-no-files-found: error
+
+  release:
+    name: Release
+    needs: [prepare-release, build]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      assets: ${{ steps.files.outputs.assets }}
+    steps:
+      # 添付を build が上げた形 (tar.gz / zip) のまま集める。download-artifact@v8 は content-type が zip の
+      # artifact を展開するので、skip-decompress が無いと Windows の .zip が展開されて <bin>.exe だけが残る。
+      # skip-decompress はほかの artifact も zip の塊のまま落とすので、pattern で添付だけに絞る
+      - uses: actions/download-artifact@v8
+        with:
+          path: release
+          pattern: ${{ env.BINARY_NAME }}-*
+          merge-multiple: true
+          skip-decompress: true
+
+      - name: Write SHA256SUMS
+        id: files
+        env:
+          EXPECTED: ${{ needs.build.outputs.assets }}
+        run: |
+          set -euo pipefail
+          cd release
+          # 添付は build の target ごとに 1 つ: <bin>-<target>.tar.gz か Windows の <bin>-<target>.zip の、空でない
+          # 通常のファイル。展開された .exe・ディレクトリ・隠しファイルが混ざったり数が合わなかったりしたら、
+          # Release を作る前に止める
+          shopt -s nullglob dotglob
+          files=(*)
+          for f in "${files[@]}"; do
+            case "${f}" in
+              "${BINARY_NAME}"-*-windows-*.zip | "${BINARY_NAME}"-*.tar.gz) ;;
+              *)
+                echo "::error::Unexpected entry in release/: ${f} (expected ${BINARY_NAME}-<target>.tar.gz or .zip)"
+                exit 1
+                ;;
+            esac
+            if [ ! -f "${f}" ] || [ -L "${f}" ] || [ ! -s "${f}" ]; then
+              echo "::error::${f} in release/ is not a non-empty regular file"
+              exit 1
+            fi
+          done
+          if [ "${#files[@]}" -ne "${EXPECTED}" ]; then
+            echo "::error::release/ has ${#files[@]} assets, expected ${EXPECTED} (one per build target)"
+            exit 1
+          fi
+          sha256sum -- "${files[@]}" > SHA256SUMS
+          cat SHA256SUMS
+          echo "assets=$(printf '%s ' *)" >> "$GITHUB_OUTPUT"
+
+      # タイトルはタグ名だけ。本文は導入の手順で、変更点は generate_release_notes が後ろに足す
+      - name: Create the release
+        uses: softprops/action-gh-release@v3
+        with:
+          tag_name: ${{ needs.prepare-release.outputs.tag }}
+          name: ${{ needs.prepare-release.outputs.tag }}
+          body: |
+            ## インストール
+
+            ### Homebrew (macOS)
+
+            ```bash
+            brew install ${{ github.repository_owner }}/ai-config-tui/ai-config-tui
+            ```
+
+            ### ダウンロード
+
+            下の添付から環境に合うファイルを取得して展開し、`${{ env.BINARY_NAME }}` を `PATH` の通った場所に置きます。macOS は Apple Silicon だけに対応します。添付のチェックサムは `SHA256SUMS` にあります。
+
+            | 環境 | 添付 |
+            |---|---|
+            | macOS (Apple Silicon) | `${{ env.BINARY_NAME }}-aarch64-apple-darwin.tar.gz` |
+            | Windows (x64) | `${{ env.BINARY_NAME }}-x86_64-pc-windows-msvc.zip` |
+
+            ```bash
+            curl -fLO https://github.com/${{ github.repository }}/releases/download/${{ needs.prepare-release.outputs.tag }}/${{ env.BINARY_NAME }}-aarch64-apple-darwin.tar.gz
+            tar -xzf ${{ env.BINARY_NAME }}-aarch64-apple-darwin.tar.gz
+            ```
+          generate_release_notes: true
+          files: release/*
+          fail_on_unmatched_files: true
+
+      # 公開した添付が release/ と名前・大きさ・状態まで一致するか (アップロードの取りこぼしを見つける)。
+      # GitHub が添付の SHA-256 (digest) を返していれば、それも照らす
+      - name: Verify the published assets
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
+        run: |
+          set -euo pipefail
+          gh release view "${TAG}" --repo "${GITHUB_REPOSITORY}" --json assets > "${RUNNER_TEMP}/assets.json"
+          find release -type f -printf '%f %s uploaded\n' | LC_ALL=C sort > "${RUNNER_TEMP}/expected.txt"
+          jq -r '.assets[] | "\(.name) \(.size) \(.state)"' "${RUNNER_TEMP}/assets.json" | LC_ALL=C sort > "${RUNNER_TEMP}/published.txt"
+          if ! diff -u "${RUNNER_TEMP}/expected.txt" "${RUNNER_TEMP}/published.txt"; then
+            echo "::error::The published assets differ from the files in release/"
+            exit 1
+          fi
+          jq -r '.assets[] | select(.digest != null) | "\(.digest | ltrimstr("sha256:"))  \(.name)"' "${RUNNER_TEMP}/assets.json" > "${RUNNER_TEMP}/published.sha256"
+          if [ -s "${RUNNER_TEMP}/published.sha256" ]; then
+            (cd release && sha256sum --check --strict --quiet "${RUNNER_TEMP}/published.sha256")
+          else
+            echo "::warning::GitHub returned no asset digests; skipped the SHA-256 comparison"
+          fi
+
+  # ---- Homebrew ----------------------------------------------------------------------------
+  # tap (homebrew-ai-config-tui) の formula を、この版の添付の tar.gz を直接指す形に書き直す。tap は別の
+  # リポジトリなので GITHUB_TOKEN では push できず、GitHub App のトークンを使う (App の Client ID は
+  # Variables の APP_CLIENT_ID、秘密鍵は Secrets の PRIVATE_KEY)。
+  # GITHUB_TOKEN で作った Release は on: release のワークフローを起動しないので、同じワークフローの後続にする
+  update-homebrew:
+    name: Update the Homebrew tap
+    needs: [prepare-release, release]
+    if: ${{ !inputs.dry_run }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    env:
+      TAG: ${{ needs.prepare-release.outputs.tag }}
+    outputs:
+      # updated / unchanged / superseded / not-configured (空ならこのジョブが途中で落ちた)
+      state: ${{ steps.formula.outputs.state || steps.app.outputs.state }}
+      tap: ${{ github.repository_owner }}/homebrew-ai-config-tui
+    steps:
+      # App の設定が無ければリリース全体を落とさずに飛ばす (jobs.<id>.if では secrets を読めない)。
+      # 値そのものは渡さず、有無だけを式で渡す
+      - name: Check the GitHub App settings
+        id: app
+        env:
+          HAS_CLIENT_ID: ${{ vars.APP_CLIENT_ID != '' }}
+          HAS_PRIVATE_KEY: ${{ secrets.PRIVATE_KEY != '' }}
+        run: |
+          if [ "${HAS_CLIENT_ID}" = "true" ] && [ "${HAS_PRIVATE_KEY}" = "true" ]; then
+            echo "enabled=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "::warning::The GitHub App for the tap is not configured (variable APP_CLIENT_ID and secret PRIVATE_KEY); skipped the Homebrew tap"
+            echo "enabled=false" >> "$GITHUB_OUTPUT"
+            echo "state=not-configured" >> "$GITHUB_OUTPUT"
+          fi
+
+      # 全部の添付を取り直さず、公開した SHA256SUMS から formula が指す添付の sha256 を読む
+      - name: Read the checksums
+        id: sums
+        if: steps.app.outputs.enabled == 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          gh release download "${TAG}" --repo "${GITHUB_REPOSITORY}" --pattern SHA256SUMS --dir "${RUNNER_TEMP}"
+          for target in aarch64-apple-darwin; do
+            asset="${BINARY_NAME}-${target}.tar.gz"
+            sum=$(awk -v f="${asset}" '$2 == f { print $1 }' "${RUNNER_TEMP}/SHA256SUMS")
+            if [ "${#sum}" -ne 64 ]; then
+              echo "::error::SHA256SUMS has no entry for ${asset}"
+              exit 1
+            fi
+            echo "${target//-/_}=${sum}" >> "$GITHUB_OUTPUT"
+          done
+
+      # App のトークンは tap を触る直前に作る (トークンに手が届く時間を短くする)。対象は tap だけ、権限は contents: write だけ
+      - name: Create a token for the tap
+        id: app-token
+        if: steps.app.outputs.enabled == 'true'
+        uses: actions/create-github-app-token@v3
+        with:
+          client-id: ${{ vars.APP_CLIENT_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: homebrew-ai-config-tui
+          permission-contents: write
+
+      - uses: actions/checkout@v7
+        if: steps.app.outputs.enabled == 'true'
+        with:
+          repository: ${{ github.repository_owner }}/homebrew-ai-config-tui
+          token: ${{ steps.app-token.outputs.token }}
+          path: tap
+
+      # formula は添付の tar.gz を直接指す (bottle もソースの url も持たない)。配るのは macOS の Apple Silicon
+      # だけなので、Intel の Mac と Linux では depends_on が入れる前に止める。変化が無ければ push しない
+      # (再実行しても壊れない)。formula がこの版より新しい版を指していれば触らない (古い実行の
+      # 「Re-run failed jobs」で formula を前の版へ戻さない)
+      - name: Update the formula
+        id: formula
+        if: steps.app.outputs.enabled == 'true'
+        working-directory: tap
+        env:
+          VERSION: ${{ needs.prepare-release.outputs.version }}
+          HOMEPAGE: ${{ github.server_url }}/${{ github.repository }}
+          URL: ${{ github.server_url }}/${{ github.repository }}/releases/download/${{ needs.prepare-release.outputs.tag }}
+          SHA_MACOS_ARM: ${{ steps.sums.outputs.aarch64_apple_darwin }}
+        run: |
+          set -euo pipefail
+          if [ -f Formula/ai-config-tui.rb ]; then
+            CURRENT=$(sed -nE 's#.*/releases/download/v([0-9][0-9.]*)/.*#\1#p' Formula/ai-config-tui.rb | sort -V | tail -n 1)
+            NEWEST=$(printf '%s\n' "${CURRENT}" "${VERSION}" | sort -V | tail -n 1)
+            if [ -n "${CURRENT}" ] && [ "${CURRENT}" != "${VERSION}" ] && [ "${NEWEST}" = "${CURRENT}" ]; then
+              echo "::notice::The formula already points at v${CURRENT}, which is newer than ${TAG}; left it unchanged"
+              echo "state=superseded" >> "$GITHUB_OUTPUT"
+              exit 0
+            fi
+          fi
+          # Homebrew のクラス名の規則 (Formulary.class_s): formula の名前の先頭と - _ . の直後を大文字にして
+          # つなぐ (ai-config-tui → AiConfigTui)
+          CLASS=$(printf '%s' "ai-config-tui" | sed -E 's/(^|[-_.])([a-z0-9])/\U\2/g')
+          mkdir -p Formula
+          # シェルが展開するのは ${...} だけ (Ruby の #{...} はそのまま残る)。版は URL の /download/v<版>/ から
+          # Homebrew が読むので version は書かない (書くと brew audit --strict が冗長と指摘する)
+          cat > Formula/ai-config-tui.rb <<FORMULA
+          class ${CLASS} < Formula
+            desc "Terminal editor for Claude Code and Codex configuration profiles"
+            homepage "${HOMEPAGE}"
+            url "${URL}/${BINARY_NAME}-aarch64-apple-darwin.tar.gz"
+            sha256 "${SHA_MACOS_ARM}"
+            license "MIT"
+
+            depends_on arch: :arm64
+            depends_on :macos
+
+            def install
+              bin.install "${BINARY_NAME}"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/${BINARY_NAME} --version")
+            end
+          end
+          FORMULA
+          # 壊れた Ruby (desc の中の引用符、数字で始まるクラス名など) を tap に push しない
+          ruby -c Formula/ai-config-tui.rb
+          # 新しく作った formula も差分に入るよう、add してから比べる
+          git add Formula/ai-config-tui.rb
+          if git diff --cached --quiet; then
+            echo "The formula already points at ${TAG}"
+            echo "state=unchanged" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git commit -m "ai-config-tui ${TAG}"
+          git push
+          echo "state=updated" >> "$GITHUB_OUTPUT"
+
+  # ---- 結果のまとめ ------------------------------------------------------------------------
+  # 途中のジョブが落ちても、飛ばされても (dry_run を含む) 結果を書く
+  release-summary:
+    name: Release summary
+    needs: [prepare-release, build, release, update-homebrew]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Write the summary
+        env:
+          DRY_RUN: ${{ inputs.dry_run }}
+          TAG: ${{ needs.prepare-release.outputs.tag }}
+          PREPARE_RESULT: ${{ needs.prepare-release.result }}
+          BUILD_RESULT: ${{ needs.build.result }}
+          RELEASE_RESULT: ${{ needs.release.result }}
+          ASSETS: ${{ needs.release.outputs.assets }}
+          HOMEBREW_RESULT: ${{ needs.update-homebrew.result }}
+          HOMEBREW_STATE: ${{ needs.update-homebrew.outputs.state }}
+          HOMEBREW_TAP: ${{ needs.update-homebrew.outputs.tap }}
+        run: |
+          set -euo pipefail
+          {
+            if [ "${DRY_RUN}" = "true" ]; then
+              echo "## Dry run: ${TAG:-no version}"
+              echo
+              echo "prepare-release: ${PREPARE_RESULT}. Nothing was committed, tagged or released, and the build did not run (ci.yml builds every target)."
+              exit 0
+            fi
+            echo "## ${TAG:-no version}"
+            echo
+            echo "| Job | Result | Note |"
+            echo "|---|---|---|"
+            echo "| prepare-release | ${PREPARE_RESULT} | |"
+            echo "| build | ${BUILD_RESULT} | |"
+            echo "| release | ${RELEASE_RESULT} | |"
+            if [ -n "${HOMEBREW_RESULT:-}" ]; then
+              case "${HOMEBREW_STATE:-}" in
+                updated) note="updated ${HOMEBREW_TAP}" ;;
+                unchanged) note="${HOMEBREW_TAP} already had this version" ;;
+                superseded) note="skipped: ${HOMEBREW_TAP} already points at a newer version" ;;
+                not-configured) note="skipped: the GitHub App is not configured" ;;
+                *) note="not updated" ;;
+              esac
+              echo "| update-homebrew | ${HOMEBREW_RESULT} | ${note} |"
+            fi
+            if [ -n "${ASSETS:-}" ]; then
+              echo
+              echo "Assets of ${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/releases/tag/${TAG}:"
+              echo
+              read -r -a assets <<< "${ASSETS}"
+              for asset in "${assets[@]}"; do
+                echo "- \`${asset}\`"
+              done
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
