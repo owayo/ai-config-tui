@@ -473,6 +473,136 @@ fn external_changes_and_concurrent_creation_are_not_overwritten() {
 }
 
 #[test]
+fn snapshot_rejects_invalid_utf8_and_oversized_files_without_writing() {
+    let fixture = Fixture::new();
+    let invalid = fixture.path("invalid.json");
+    fs::write(&invalid, [0xff]).unwrap();
+    let snapshot = Snapshot::load(invalid.clone(), fixture.path("state")).unwrap();
+    assert!(snapshot.text().is_err());
+    assert!(Config::load(invalid, Provider::Claude, fixture.path("state")).is_err());
+
+    let limit = 5 * 1024 * 1024;
+    let file = fixture.path("boundary.txt");
+    let boundary = "x".repeat(limit);
+    fs::write(&file, &boundary).unwrap();
+    let mut snapshot = Snapshot::load(file.clone(), fixture.path("state")).unwrap();
+    assert_eq!(snapshot.text().unwrap(), Some(boundary.as_str()));
+    assert!(snapshot.save(&(boundary.clone() + "x")).is_err());
+    assert_eq!(fs::read_to_string(&file).unwrap(), boundary);
+    assert!(!fixture.path("state").exists());
+    snapshot.save(&boundary).unwrap();
+    fs::write(&file, boundary + "x").unwrap();
+    assert!(Snapshot::load(file, fixture.path("state")).is_err());
+}
+
+#[test]
+fn contended_save_lock_preserves_the_file_and_releases_after_failure() {
+    let fixture = Fixture::new();
+    let file = fixture.write("settings.json", "original");
+    let mut snapshot = Snapshot::load(file.clone(), fixture.path("state")).unwrap();
+    snapshot.save("first").unwrap();
+    let lock_path = fs::read_dir(fixture.path("state/locks"))
+        .unwrap()
+        .next()
+        .unwrap()
+        .unwrap()
+        .path();
+    let lock = fs::OpenOptions::new()
+        .read(true)
+        .write(true)
+        .open(lock_path)
+        .unwrap();
+    lock.try_lock().unwrap();
+    assert!(snapshot.save("second").is_err());
+    assert_eq!(fs::read_to_string(&file).unwrap(), "first");
+    drop(lock);
+    snapshot.save("second").unwrap();
+    assert_eq!(fs::read_to_string(file).unwrap(), "second");
+}
+
+#[cfg(unix)]
+#[test]
+fn read_only_settings_are_not_replaced() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let fixture = Fixture::new();
+    let file = fixture.write("settings.json", "original");
+    fs::set_permissions(&file, fs::Permissions::from_mode(0o400)).unwrap();
+    let mut snapshot = Snapshot::load(file.clone(), fixture.path("state")).unwrap();
+    assert!(snapshot.save("changed").is_err());
+    assert_eq!(fs::read_to_string(&file).unwrap(), "original");
+    assert_eq!(
+        fs::metadata(file).unwrap().permissions().mode() & 0o777,
+        0o400
+    );
+    assert!(!fixture.path("state/backups").exists());
+}
+
+#[test]
+fn setting_labels_replace_terminal_control_characters() {
+    let fixture = Fixture::new();
+    fixture.write(".claude/settings.json", r#"{"custom\u001b[31m":"value"}"#);
+    let mut app = fixture.app();
+    select_field(&mut app, "custom\u{1b}[31m");
+    let mut terminal = Terminal::new(TestBackend::new(180, 45)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(
+        !screen_text(&terminal)
+            .chars()
+            .any(|character| character.is_control() && character != '\n')
+    );
+}
+
+#[test]
+#[ignore = "設定一覧の性能を手動で計測する"]
+fn benchmark_settings_rows() {
+    use std::{hint::black_box, time::Instant};
+
+    for provider in [Provider::Claude, Provider::Codex] {
+        for extra_count in [0, 1000] {
+            let fixture = Fixture::new();
+            let text = match provider {
+                Provider::Claude => serde_json::to_string(
+                    &(0..extra_count)
+                        .map(|index| (format!("extra_{index}"), serde_json::json!(index)))
+                        .collect::<serde_json::Map<_, _>>(),
+                )
+                .unwrap(),
+                Provider::Codex => (0..extra_count)
+                    .map(|index| format!("extra_{index} = {index}\n"))
+                    .collect::<String>(),
+            };
+            let profile = match provider {
+                Provider::Claude => (".claude/settings.json", "Claude · Default"),
+                Provider::Codex => (".codex/config.toml", "Codex · Default"),
+            };
+            fixture.write(profile.0, &text);
+            let app = App::new(
+                fixture.profiles(),
+                fixture.directory.path().to_owned(),
+                Some(profile.1),
+            )
+            .unwrap();
+            for _ in 0..5 {
+                black_box(app.rows());
+            }
+            let mut samples = Vec::new();
+            for _ in 0..25 {
+                let start = Instant::now();
+                black_box(app.rows());
+                samples.push(start.elapsed().as_micros());
+            }
+            eprintln!("{provider:?} 追加{extra_count}項目: {samples:?} µs");
+            samples.sort_unstable();
+            eprintln!(
+                "中央値 {} µs、最小 {} µs、最大 {} µs",
+                samples[12], samples[0], samples[24]
+            );
+        }
+    }
+}
+
+#[test]
 fn backups_are_rotated_per_file_and_kept_outside_the_profile() {
     let fixture = Fixture::new();
     let file = fixture.write("profile/settings.json", "0");
@@ -626,7 +756,7 @@ fn tui_add_dialog_registers_a_codex_profile() {
     }
     app.handle_key(key(KeyCode::Tab));
     app.handle_key(control('u'));
-    // Cursor starts at the beginning, so Ctrl+K clears the prefilled ~/ path.
+    // カーソルが先頭にあるため、Ctrl+Kで初期値の ~/ を消す。
     app.handle_key(control('k'));
     for letter in fixture.path("work").to_string_lossy().chars() {
         app.handle_key(key(KeyCode::Char(letter)));
@@ -646,7 +776,7 @@ fn tui_renders_all_dialogs_and_responsive_sizes() {
         ".claude/settings.json",
         "{\"env\":{\"API_KEY\":\"private-value\"}}",
     );
-    // Reload after the app loaded the missing file.
+    // アプリが未作成ファイルを読み込んだ後なので、作成した内容を再読込する。
     app.handle_key(key(KeyCode::Char('r')));
     for (width, height) in [(160, 45), (100, 30), (60, 16), (20, 5)] {
         let mut terminal = Terminal::new(TestBackend::new(width, height)).unwrap();
@@ -1404,7 +1534,7 @@ fn deprecated_settings_follow_retired_settings_and_render_in_orange() {
     assert!(rows[..4].iter().all(|field| field.tree_prefix.is_empty()));
     assert!(!app.config().unwrap().dirty());
 
-    // Keep the key out of the search title when checking rendered field colors.
+    // 項目の描画色を確かめる際、検索タイトルにキーが出ないようにする。
     app.query = rows
         .iter()
         .find(|field| field.key() == "includeCoAuthoredBy")

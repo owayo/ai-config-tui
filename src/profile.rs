@@ -147,19 +147,25 @@ impl Profiles {
             validate_profile(&items, &profile)?;
             items.push(profile);
         }
-        // Environment overrides are visible without replacing the two default directories.
+        // 環境変数の指定先は、既定のディレクトリを置き換えずに追加する。
         for (key, provider) in [
             ("CLAUDE_CONFIG_DIR", Provider::Claude),
             ("CODEX_HOME", Provider::Codex),
         ] {
             if let Some(directory) = env::var_os(key).filter(|value| !value.is_empty()) {
                 let directory = expand_path(Path::new(&directory), home)?;
-                if !items
-                    .iter()
-                    .any(|item| item.provider == provider && item.directory == directory)
-                {
+                if !items.iter().any(|item| {
+                    item.provider == provider && same_directory(&item.directory, &directory)
+                }) {
+                    let base_name = format!("{} · {key}", provider.label());
+                    let mut name = base_name.clone();
+                    let mut suffix = 2;
+                    while items.iter().any(|item| item.name == name) {
+                        name = format!("{base_name} ({suffix})");
+                        suffix += 1;
+                    }
                     items.push(Profile {
-                        name: format!("{} · {key}", provider.label()),
+                        name,
                         provider,
                         directory,
                     });
@@ -272,7 +278,7 @@ pub fn expand_path(path: &Path, home: &Path) -> Result<PathBuf> {
     } else {
         env::current_dir()?.join(path)
     };
-    // Lexical normalization also makes duplicate relative spellings compare correctly.
+    // 相対パスの表記が違っても重複を比較できるよう、字句的に正規化する。
     let mut normalized = PathBuf::new();
     for part in absolute.components() {
         use std::path::Component;

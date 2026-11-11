@@ -97,7 +97,7 @@ install: $(INSTALL_DEPS) ## リリース版を INSTALL_PATH (既定 /usr/local/b
 	@$(require_abs)
 	@test -f "$$BIN_SRC" || { printf '%s\n' 'リリース版のバイナリがありません。先に make release を実行してください' >&2; exit 1; }
 	@if [ -d "$$INSTALL_PATH/$(BINARY_NAME)" ]; then printf 'インストール先が既にディレクトリです: %s\n' "$$INSTALL_PATH/$(BINARY_NAME)" >&2; exit 1; fi
-	@mkdir -p "$(INSTALL_PATH)"
+	@mkdir -p "$$INSTALL_PATH"
 	@set -eu; \
 	install_tmp=$$(mktemp "$$INSTALL_PATH/.$(BINARY_NAME).XXXXXX"); \
 	trap 'rm -f "$$install_tmp"' 0; \
@@ -110,7 +110,7 @@ install: $(INSTALL_DEPS) ## リリース版を INSTALL_PATH (既定 /usr/local/b
 # 設定ファイル・プロファイルの登録・バックアップは消さない
 uninstall: ## INSTALL_PATH から取り除く
 	@$(require_abs)
-	rm -f "$(INSTALL_PATH)/$(BINARY_NAME)"
+	rm -f "$$INSTALL_PATH/$(BINARY_NAME)"
 
 clean: ## ビルド成果物を消す
 	$(RUN) cargo clean

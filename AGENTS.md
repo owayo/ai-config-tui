@@ -32,6 +32,7 @@ ai-config-tui は、Claude Code (`settings.json`) と Codex (`config.toml`) の�
 | `src/editor.rs` | テキストの入力欄 |
 | `src/tests.rs` | 単体テスト (TUI の描画と操作を含む) |
 | `tests/cli.rs` | バイナリを起動する結合テスト |
+| `tests/install.rs` | Unix 向けのインストール・削除テスト。保存先名をシェルに解釈させないことも確認する |
 | `data/settings-catalog.json` | 公式資料から `make catalog` が作る設定の一覧。手で書き換えない |
 | `data/settings-help.ja.json` | 設定の日本語名と説明。手で管理する |
 | `data/choice-help.ja.json` | 候補ごとの説明。グループごとに出典の URL を持ち、全体の確認日を `verified_at` に書く |
@@ -56,6 +57,9 @@ make fmt           # 整形 (ファイルを書き換える)
   ```
 
 - テストは利用者の設定に触れない。一時ディレクトリを `HOME`・`XDG_CONFIG_HOME`・`XDG_STATE_HOME` に渡し、`CLAUDE_CONFIG_DIR` と `CODEX_HOME` を外す。プロファイルの登録先は `--registry` で一時ディレクトリを指す (`tests/cli.rs`)。Windows の `dirs::home_dir()` は `HOME` を見ないので、パスは引数で渡す作りにする
+- 環境変数を使うテストは `Command::env` で子プロセスだけに渡し、テストプロセスの環境を変更しない。環境変数からの追加でも、通常の登録と同じディレクトリ照合を使い、プロファイル名の一意性を保つ
+- `tests/install.rs` は一時ディレクトリで `make` を動かす。ビルドとツールチェーンの呼び出しを省き、テスト用ファイルのコピー・削除だけを検査する。`INSTALL_PATH` は環境変数でレシピに渡し、シェル内では引用した `$$INSTALL_PATH` を使う
+- 設定一覧の性能計測は `mise exec -- cargo test --release --locked benchmark_settings_rows -- --ignored --nocapture` で実行する。各プロバイダーで追加 0 / 1,000 項目を使い、5 回の準備実行後に 25 回計測する。時間の上限は通常のテストに設けない
 
 ## 設定の説明を足すとき
 
