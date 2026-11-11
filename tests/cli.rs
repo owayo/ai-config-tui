@@ -260,3 +260,158 @@ fn environment_profile_names_do_not_collide_with_registered_names() {
         assert_eq!(output.lines().count(), 6);
     }
 }
+
+#[test]
+fn invalid_registered_directories_can_still_be_listed_and_removed() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let profile = root.join("work");
+    let added = isolated_cli(root)
+        .args([
+            "profile",
+            "add",
+            "--name",
+            "Work",
+            "--provider",
+            "claude",
+            "--directory",
+        ])
+        .arg(&profile)
+        .output()
+        .unwrap();
+    assert!(added.status.success());
+    std::fs::write(&profile, "keep this file").unwrap();
+    let listed = isolated_cli(root)
+        .args(["profile", "list"])
+        .output()
+        .unwrap();
+    assert!(
+        listed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&listed.stderr)
+    );
+    let output = String::from_utf8_lossy(&listed.stdout);
+    assert!(output.contains("Work\tClaude Code"));
+    assert!(String::from_utf8_lossy(&listed.stderr).contains("ディレクトリ"));
+    let removed = isolated_cli(root)
+        .args(["profile", "remove", "Work"])
+        .output()
+        .unwrap();
+    assert!(
+        removed.status.success(),
+        "{}",
+        String::from_utf8_lossy(&removed.stderr)
+    );
+    assert_eq!(std::fs::read_to_string(profile).unwrap(), "keep this file");
+    let listed = isolated_cli(root)
+        .args(["profile", "list"])
+        .output()
+        .unwrap();
+    assert!(!String::from_utf8_lossy(&listed.stdout).contains("Work\t"));
+}
+
+#[cfg(unix)]
+#[test]
+fn registered_directories_that_later_alias_defaults_can_be_removed() {
+    let directory = tempfile::tempdir().unwrap();
+    let root = directory.path();
+    let alias = root.join("work");
+    let added = isolated_cli(root)
+        .args([
+            "profile",
+            "add",
+            "--name",
+            "Work",
+            "--provider",
+            "claude",
+            "--directory",
+        ])
+        .arg(&alias)
+        .output()
+        .unwrap();
+    assert!(added.status.success());
+    std::fs::create_dir(root.join(".claude")).unwrap();
+    std::os::unix::fs::symlink(root.join(".claude"), &alias).unwrap();
+    let listed = isolated_cli(root)
+        .args(["profile", "list"])
+        .output()
+        .unwrap();
+    assert!(listed.status.success());
+    assert!(String::from_utf8_lossy(&listed.stderr).contains("同じ種類・ディレクトリ"));
+    let removed = isolated_cli(root)
+        .args(["profile", "remove", "Work"])
+        .output()
+        .unwrap();
+    assert!(removed.status.success());
+    assert!(
+        std::fs::symlink_metadata(alias)
+            .unwrap()
+            .file_type()
+            .is_symlink()
+    );
+}
+
+#[test]
+fn environment_profiles_are_transient_and_cannot_change_provider() {
+    for (variable, provider, label) in [
+        ("CLAUDE_CONFIG_DIR", "claude", "Claude Code"),
+        ("CODEX_HOME", "codex", "Codex"),
+    ] {
+        let directory = tempfile::tempdir().unwrap();
+        let root = directory.path();
+        let environment = root.join("from-environment");
+        let added = isolated_cli(root)
+            .env(variable, &environment)
+            .args([
+                "profile",
+                "add",
+                "--name",
+                "Work",
+                "--provider",
+                provider,
+                "--directory",
+            ])
+            .arg(root.join("work"))
+            .output()
+            .unwrap();
+        assert!(added.status.success());
+        let registry = std::fs::read(root.join("profiles.toml")).unwrap();
+        assert!(!String::from_utf8_lossy(&registry).contains("from-environment"));
+        let listed = isolated_cli(root)
+            .args(["profile", "list"])
+            .output()
+            .unwrap();
+        assert!(listed.status.success());
+        assert_eq!(String::from_utf8_lossy(&listed.stdout).lines().count(), 3);
+        let name = format!("{label} · {variable}");
+        let changed = isolated_cli(root)
+            .env(variable, &environment)
+            .args([
+                "profile",
+                "set-provider",
+                &name,
+                "--provider",
+                if provider == "claude" {
+                    "codex"
+                } else {
+                    "claude"
+                },
+            ])
+            .output()
+            .unwrap();
+        assert!(!changed.status.success());
+        let removed = isolated_cli(root)
+            .env(variable, &environment)
+            .args(["profile", "remove", &name])
+            .output()
+            .unwrap();
+        assert!(removed.status.success());
+        assert_eq!(std::fs::read(root.join("profiles.toml")).unwrap(), registry);
+        let listed = isolated_cli(root)
+            .env(variable, &environment)
+            .args(["profile", "list"])
+            .output()
+            .unwrap();
+        assert!(String::from_utf8_lossy(&listed.stdout).contains(variable));
+    }
+}

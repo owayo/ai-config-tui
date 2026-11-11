@@ -36,6 +36,7 @@ pub struct Field {
     pub tree_prefix: String,
     pub retired: bool,
     pub deprecated: bool,
+    pub sensitive: bool,
 }
 
 impl Field {
@@ -299,7 +300,40 @@ pub fn fields(config: &Config) -> Vec<Field> {
         }
     }
     fields.retain(|field| field.warning_label().is_none() || field.value.is_some());
+    // 検索で子項目が隠れていても、秘密情報を含む親の値はマスクする。
+    let mut sensitive_ancestors = std::collections::HashSet::new();
+    for field in &mut fields {
+        field.sensitive = field.value.is_some() && sensitive_path(&field.path);
+        if field.sensitive {
+            for length in 1..=field.path.len() {
+                sensitive_ancestors.insert(field.path[..length].to_vec());
+            }
+        }
+    }
+    for field in &mut fields {
+        field.sensitive |= sensitive_ancestors.contains(field.path.as_slice());
+    }
     fields
+}
+
+fn sensitive_path(path: &[String]) -> bool {
+    if path.len() >= 2 && path[0] == "shell_environment_policy" && path[1] == "set" {
+        return true;
+    }
+    path.iter().any(|part| {
+        let key = part.to_lowercase().replace('-', "_");
+        key == "env"
+            || [
+                "token",
+                "secret",
+                "password",
+                "api_key",
+                "apikey",
+                "authorization",
+            ]
+            .iter()
+            .any(|word| key.contains(word))
+    })
 }
 
 fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &str) -> Field {
@@ -323,6 +357,7 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         tree_prefix: String::new(),
         retired: false,
         deprecated: false,
+        sensitive: false,
     }
 }
 
@@ -351,6 +386,7 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         tree_prefix: String::new(),
         retired: false,
         deprecated: false,
+        sensitive: false,
     }
 }
 

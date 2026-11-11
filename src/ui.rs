@@ -188,7 +188,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
     let table_rows = rows.iter().map(|field| {
         let value = if field.group {
             String::new()
-        } else if !app.reveal && secret(&field.key()) && field.value.is_some() {
+        } else if !app.reveal && field.sensitive && field.value.is_some() {
             "[hidden]".into()
         } else {
             safe(&field.display_value())
@@ -323,7 +323,7 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                 )));
             }
             detail.push(Line::from(""));
-            let text = if !app.reveal && secret(&field.path.join(".")) {
+            let text = if !app.reveal && field.sensitive {
                 "[hidden] · hで表示"
             } else {
                 field
@@ -750,21 +750,6 @@ fn short_path(path: &std::path::Path, app: &App) -> String {
             .map(|rest| format!("~/{}", rest.display()))
             .unwrap_or_else(|_| path.display().to_string()),
     )
-}
-
-fn secret(key: &str) -> bool {
-    let key = key.to_lowercase();
-    key == "env"
-        || [
-            "token",
-            "secret",
-            "password",
-            "api_key",
-            "apikey",
-            "authorization",
-        ]
-        .iter()
-        .any(|word| key.contains(word))
 }
 
 fn safe(text: &str) -> String {

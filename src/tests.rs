@@ -9,7 +9,7 @@ use crate::{
     document::{Config, Parsed, parse},
     editor::Editor,
     fields,
-    profile::{Profile, Profiles, Provider, expand_path},
+    profile::{Profile, ProfileOrigin, Profiles, Provider, expand_path},
     storage::Snapshot,
     ui,
 };
@@ -44,11 +44,13 @@ impl Fixture {
                     name: "Claude · Default".into(),
                     provider: Provider::Claude,
                     directory: self.path(".claude"),
+                    origin: ProfileOrigin::Builtin,
                 },
                 Profile {
                     name: "Codex · Default".into(),
                     provider: Provider::Codex,
                     directory: self.path(".codex"),
+                    origin: ProfileOrigin::Builtin,
                 },
             ],
             snapshot: Snapshot::load(self.path("registry/profiles.toml"), self.path("state"))
@@ -358,6 +360,115 @@ fn json_edits_preserve_unknown_keys_and_insertion_order() {
 }
 
 #[test]
+fn removing_json_keys_preserves_the_order_of_remaining_keys() {
+    let fixture = Fixture::new();
+    let original = r#"{"first":1,"second":2,"third":3,"nested":{"first":1,"second":2,"third":3}}"#;
+    for parts in [&["first"][..], &["nested", "first"][..]] {
+        let mut config = fixture.config(Provider::Claude, original);
+        config.remove(&path(parts)).unwrap();
+        let Parsed::Json(json) = config.parsed.as_ref().unwrap() else {
+            panic!()
+        };
+        let object = if parts.len() == 1 {
+            json
+        } else {
+            &json["nested"]
+        };
+        let expected = if parts.len() == 1 {
+            vec!["second", "third", "nested"]
+        } else {
+            vec!["second", "third"]
+        };
+        assert_eq!(
+            object
+                .as_object()
+                .unwrap()
+                .keys()
+                .map(String::as_str)
+                .collect::<Vec<_>>(),
+            expected
+        );
+        assert!(config.undo());
+        assert_eq!(config.text, original);
+    }
+}
+
+#[test]
+fn unchanged_json_edits_preserve_formatting_and_undo_history() {
+    let fixture = Fixture::new();
+    let original = r#"{"language":"Japanese","nested":{"enabled":true}}"#;
+    let mut config = fixture.config(Provider::Claude, original);
+    config.remove(&path(&["model"])).unwrap();
+    config.set(&path(&["language"]), "Japanese", true).unwrap();
+    config
+        .set(&path(&["nested"]), r#"{"enabled":true}"#, false)
+        .unwrap();
+    assert_eq!(config.text, original);
+    assert!(!config.dirty());
+    assert!(!config.undo());
+    config.set(&path(&["language"]), "English", true).unwrap();
+    let changed = config.text.clone();
+    config.remove(&path(&["missing", "child"])).unwrap();
+    assert_eq!(config.text, changed);
+    assert!(config.undo());
+    assert_eq!(config.text, original);
+}
+
+#[test]
+fn unset_numeric_settings_open_empty_and_require_an_explicit_value() {
+    for (provider, name, initial) in [
+        (Provider::Claude, "cleanupPeriodDays", "Claude · Default"),
+        (Provider::Codex, "model_context_window", "Codex · Default"),
+    ] {
+        let fixture = Fixture::new();
+        let mut app = App::new(
+            fixture.profiles(),
+            fixture.directory.path().to_owned(),
+            Some(initial),
+        )
+        .unwrap();
+        select_field(&mut app, name);
+        let Some(Modal::Edit { editor, .. }) = &app.modal else {
+            panic!()
+        };
+        assert_eq!(editor.text(), "");
+        app.handle_key(control('s'));
+        assert!(matches!(
+            &app.modal,
+            Some(Modal::Edit { error: Some(_), .. })
+        ));
+        assert_eq!(app.dirty_count(), 0);
+        let Some(Modal::Edit { editor, .. }) = &mut app.modal else {
+            panic!()
+        };
+        editor.insert("30", false);
+        app.handle_key(control('s'));
+        assert!(app.modal.is_none());
+        assert_eq!(app.current_field().unwrap().value.as_deref(), Some("30"));
+        assert_eq!(app.config().unwrap().provider, provider);
+    }
+}
+
+#[test]
+fn invalid_profiles_do_not_block_other_profiles_and_can_be_reloaded_after_repair() {
+    let fixture = Fixture::new();
+    let mut profiles = fixture.profiles();
+    profiles
+        .add("Work".into(), Provider::Claude, fixture.path("work"))
+        .unwrap();
+    fixture.write("work", "keep");
+    let mut app = App::new(profiles, fixture.directory.path().to_owned(), Some("Work")).unwrap();
+    assert!(matches!(&app.documents[app.selected], Loaded::Failed(_)));
+    app.handle_key(key(KeyCode::Char('[')));
+    assert!(app.config().is_some());
+    app.handle_key(key(KeyCode::Char(']')));
+    fs::remove_file(fixture.path("work")).unwrap();
+    fixture.write("work/settings.json", "{}");
+    app.handle_key(key(KeyCode::Char('r')));
+    assert!(app.config().is_some());
+}
+
+#[test]
 fn toml_edits_preserve_comments_and_nested_inline_tables() {
     let fixture = Fixture::new();
     let mut config = fixture.config(Provider::Codex, "# model comment\nmodel = 'before' # keep inline\nfuture = { nested = { enabled = false } }\n\n[model_providers.custom]\nbase_url = 'https://example.com/api' # keep provider\n");
@@ -381,6 +492,56 @@ fn toml_edits_preserve_comments_and_nested_inline_tables() {
         .remove(&path(&["future", "nested", "enabled"]))
         .unwrap();
     assert!(!config.text.contains("enabled = true"));
+}
+
+#[test]
+fn removing_toml_keys_keeps_standalone_and_inline_comments() {
+    for (original, parts, comment) in [
+        (
+            "# 共通設定\nmodel = 'before'\napproval_policy = 'never'\n",
+            vec!["model"],
+            "# 共通設定",
+        ),
+        (
+            "model = 'before'\n\n# 権限の注記\napproval_policy = 'never'\nsandbox_mode = 'read-only'\n",
+            vec!["approval_policy"],
+            "# 権限の注記",
+        ),
+        (
+            "# 最後の注記\nmodel = 'before' # 行末の注記\n",
+            vec!["model"],
+            "# 最後の注記",
+        ),
+        (
+            "# テーブル直前の注記\nmodel = 'before'\n[tui]\nnotifications = true\n",
+            vec!["model"],
+            "# テーブル直前の注記",
+        ),
+        (
+            "[tui]\n# 子項目の注記\nnotifications = true\n# 末尾の注記\n",
+            vec!["tui", "notifications"],
+            "# 子項目の注記",
+        ),
+        (
+            "# ドット付きキーの注記\ntui.notifications = true\nmodel = 'before'\n",
+            vec!["tui", "notifications"],
+            "# ドット付きキーの注記",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        let mut config = fixture.config(Provider::Codex, original);
+        config.remove(&path(&parts)).unwrap();
+        assert!(config.text.contains(comment), "{}", config.text);
+        if original.contains("# 行末の注記") {
+            assert!(config.text.contains("# 行末の注記"));
+        }
+        if original.contains("# 末尾の注記") {
+            assert!(config.text.contains("# 末尾の注記"));
+        }
+        assert!(parse(Provider::Codex, &config.text).is_ok());
+        assert!(config.undo());
+        assert_eq!(config.text, original);
+    }
 }
 
 #[test]
@@ -554,6 +715,100 @@ fn setting_labels_replace_terminal_control_characters() {
 }
 
 #[test]
+fn nested_environment_values_are_masked_until_revealed() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".codex/config.toml",
+        "[mcp_servers.work]\ncommand = 'example-command'\n[mcp_servers.work.env]\nCUSTOM_VALUE = 'private-environment-value'\n",
+    );
+    let mut app = App::new(
+        fixture.profiles(),
+        fixture.directory.path().to_owned(),
+        Some("Codex · Default"),
+    )
+    .unwrap();
+    select_field(&mut app, "mcp_servers.work.env.CUSTOM_VALUE");
+    app.handle_key(key(KeyCode::Esc));
+    let mut terminal = Terminal::new(TestBackend::new(180, 45)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(!screen_text(&terminal).contains("private-environment-value"));
+    app.query = "mcp_servers.work.command".into();
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.key() == "mcp_servers.work.command")
+        .unwrap();
+    app.table_state.select(Some(index));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(screen_text(&terminal).contains("example-command"));
+    assert!(!screen_text(&terminal).contains("private-environment-value"));
+    app.query.clear();
+    select_field(&mut app, "mcp_servers.work.env.CUSTOM_VALUE");
+    app.handle_key(key(KeyCode::Esc));
+    app.handle_key(key(KeyCode::Char('h')));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(screen_text(&terminal).contains("private-environment-value"));
+}
+
+#[test]
+fn ancestor_values_stay_masked_when_sensitive_children_are_filtered() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".codex/config.toml",
+        "[tui]\nnotifications = true\napi_key = 'hidden123'\n",
+    );
+    let mut app = App::new(
+        fixture.profiles(),
+        fixture.directory.path().to_owned(),
+        Some("Codex · Default"),
+    )
+    .unwrap();
+    app.query = "tui.notifications".into();
+    let rows = app.rows();
+    assert!(rows.iter().all(|field| field.key() != "tui.api_key"));
+    let index = rows.iter().position(|field| field.key() == "tui").unwrap();
+    assert!(rows[index].value.as_deref().unwrap().contains("hidden123"));
+    app.table_state.select(Some(index));
+    let mut terminal = Terminal::new(TestBackend::new(180, 45)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(!screen_text(&terminal).contains("hidden123"));
+    app.handle_key(key(KeyCode::Char('h')));
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(screen_text(&terminal).contains("hidden123"));
+}
+
+#[test]
+fn shell_environment_overrides_and_api_key_headers_are_masked() {
+    for (text, name) in [
+        (
+            "[shell_environment_policy.set]\nCUSTOM_VALUE = 'hidden123'\n",
+            "shell_environment_policy.set.CUSTOM_VALUE",
+        ),
+        (
+            "[mcp_servers.work.http_headers]\nX-Api-Key = 'hidden123'\n",
+            "mcp_servers.work.http_headers.X-Api-Key",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        fixture.write(".codex/config.toml", text);
+        let mut app = App::new(
+            fixture.profiles(),
+            fixture.directory.path().to_owned(),
+            Some("Codex · Default"),
+        )
+        .unwrap();
+        select_field(&mut app, name);
+        app.handle_key(key(KeyCode::Esc));
+        let mut terminal = Terminal::new(TestBackend::new(180, 45)).unwrap();
+        terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+        assert!(!screen_text(&terminal).contains("hidden123"));
+        app.handle_key(key(KeyCode::Char('h')));
+        terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+        assert!(screen_text(&terminal).contains("hidden123"));
+    }
+}
+
+#[test]
 #[ignore = "設定一覧の性能を手動で計測する"]
 fn benchmark_settings_rows() {
     use std::{hint::black_box, time::Instant};
@@ -712,6 +967,29 @@ fn editor_handles_multiline_japanese_and_backspace_without_byte_splitting() {
     assert_eq!(editor.text(), "日本abc");
     editor.insert("\u{1b}[31m", true);
     assert!(!editor.text().contains('\u{1b}'));
+}
+
+#[test]
+fn editor_cursor_counts_the_visible_replacement_for_control_characters() {
+    let original = "model = 'custom'\r\n";
+    let mut editor = Editor::new(original);
+    editor.handle(key(KeyCode::End), true);
+    assert_eq!(
+        editor.visual_col(),
+        unicode_width::UnicodeWidthStr::width("model = 'custom'�")
+    );
+    assert_eq!(editor.text(), original);
+
+    let mut editor = Editor::new("日\t\u{1b}本");
+    assert_eq!(
+        editor.visual_col(),
+        unicode_width::UnicodeWidthStr::width("日    �本")
+    );
+    editor.handle(key(KeyCode::Backspace), true);
+    assert_eq!(
+        editor.visual_col(),
+        unicode_width::UnicodeWidthStr::width("日    �")
+    );
 }
 
 #[test]

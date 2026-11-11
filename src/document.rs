@@ -130,10 +130,10 @@ impl Config {
                         .cloned()
                         .ok_or_else(|| anyhow::anyhow!("TOMLの値を入力してください"))?
                 };
-                set_toml(root.as_table_mut(), path, Some(value))?;
+                let _ = set_toml(root.as_table_mut(), path, Some(value))?;
             }
         }
-        self.replace(render(&parsed)?)
+        self.apply_edit(parsed)
     }
 
     pub fn remove(&mut self, path: &[String]) -> Result<()> {
@@ -143,7 +143,20 @@ impl Config {
             .ok_or_else(|| anyhow::anyhow!("全体編集で構文を修正してください"))?;
         match &mut parsed {
             Parsed::Json(root) => set_json(root, path, None)?,
-            Parsed::Toml(root) => set_toml(root.as_table_mut(), path, None)?,
+            Parsed::Toml(root) => {
+                if let Some(comments) = set_toml(root.as_table_mut(), path, None)? {
+                    let trailing = root.trailing().as_str().unwrap_or("");
+                    root.set_trailing(format!("{comments}{trailing}"));
+                }
+            }
+        }
+        self.apply_edit(parsed)
+    }
+
+    fn apply_edit(&mut self, parsed: Parsed) -> Result<()> {
+        if matches!((&self.parsed, &parsed), (Some(Parsed::Json(before)), Parsed::Json(after)) if before == after)
+        {
+            return Ok(());
         }
         self.replace(render(&parsed)?)
     }
@@ -215,7 +228,7 @@ fn set_json(root: &mut Json, path: &[String], value: Option<Json>) -> Result<()>
         if let Some(value) = value {
             object.insert(key.clone(), value);
         } else {
-            object.remove(key);
+            object.shift_remove(key);
         }
     } else {
         if !object.contains_key(key) {
@@ -229,7 +242,11 @@ fn set_json(root: &mut Json, path: &[String], value: Option<Json>) -> Result<()>
     Ok(())
 }
 
-fn set_toml(table: &mut dyn TableLike, path: &[String], value: Option<Toml>) -> Result<()> {
+fn set_toml(
+    table: &mut dyn TableLike,
+    path: &[String],
+    value: Option<Toml>,
+) -> Result<Option<String>> {
     let (key, rest) = path
         .split_first()
         .ok_or_else(|| anyhow::anyhow!("設定キーがありません"))?;
@@ -244,12 +261,12 @@ fn set_toml(table: &mut dyn TableLike, path: &[String], value: Option<Toml>) -> 
                 table.insert(key, Item::Value(value));
             }
         } else {
-            table.remove(key);
+            return Ok(remove_toml_key(table, key));
         }
     } else {
         if !table.contains_key(key) {
             if value.is_none() {
-                return Ok(());
+                return Ok(None);
             }
             let mut nested = toml_edit::Table::new();
             nested.set_implicit(true);
@@ -258,7 +275,66 @@ fn set_toml(table: &mut dyn TableLike, path: &[String], value: Option<Toml>) -> 
         let Some(nested) = table.get_mut(key).and_then(Item::as_table_like_mut) else {
             bail!("親の設定値がテーブルではありません");
         };
-        set_toml(nested, rest, value)?;
+        return set_toml(nested, rest, value);
     }
-    Ok(())
+    Ok(None)
+}
+
+/// 移し先のないコメントは呼び出し元へ返し、文書の末尾に残す。
+fn remove_toml_key(table: &mut dyn TableLike, key: &str) -> Option<String> {
+    let index = table.iter().position(|(name, _)| name == key)?;
+    let mut comments = table
+        .key(key)
+        .and_then(|key| key.leaf_decor().prefix())
+        .and_then(|prefix| prefix.as_str())
+        .filter(|prefix| prefix.contains('#'))
+        .unwrap_or("")
+        .to_owned();
+    let removed = table.remove(key)?;
+    let decor = match &removed {
+        Item::Value(value) => Some(value.decor()),
+        Item::Table(table) => Some(table.decor()),
+        _ => None,
+    };
+    if let Some(decor) = decor {
+        if let Item::Table(_) = &removed
+            && let Some(prefix) = decor
+                .prefix()
+                .and_then(|prefix| prefix.as_str())
+                .filter(|prefix| prefix.contains('#'))
+        {
+            comments.push_str(prefix);
+        }
+        if let Some(suffix) = decor
+            .suffix()
+            .and_then(|suffix| suffix.as_str())
+            .filter(|suffix| suffix.contains('#'))
+        {
+            comments.push_str(suffix);
+            if !comments.ends_with('\n') {
+                comments.push('\n');
+            }
+        }
+    }
+    if comments.is_empty() {
+        return None;
+    }
+    if let Some((mut key, item)) = table.iter_mut().nth(index) {
+        let decor = match item {
+            Item::Value(_) => Some(key.leaf_decor_mut()),
+            Item::Table(table) if !table.is_implicit() && !table.is_dotted() => {
+                Some(table.decor_mut())
+            }
+            _ => None,
+        };
+        if let Some(decor) = decor {
+            let rest = decor
+                .prefix()
+                .and_then(|prefix| prefix.as_str())
+                .unwrap_or("");
+            decor.set_prefix(format!("{comments}{rest}"));
+            return None;
+        }
+    }
+    Some(comments)
 }

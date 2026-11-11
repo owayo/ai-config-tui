@@ -86,6 +86,16 @@ pub struct Profile {
     pub name: String,
     pub provider: Provider,
     pub directory: PathBuf,
+    #[serde(skip)]
+    pub origin: ProfileOrigin,
+}
+
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub enum ProfileOrigin {
+    Builtin,
+    #[default]
+    Registry,
+    Environment,
 }
 
 impl Profile {
@@ -135,16 +145,18 @@ impl Profiles {
                 name: "Claude · Default".into(),
                 provider: Provider::Claude,
                 directory: home.join(".claude"),
+                origin: ProfileOrigin::Builtin,
             },
             Profile {
                 name: "Codex · Default".into(),
                 provider: Provider::Codex,
                 directory: home.join(".codex"),
+                origin: ProfileOrigin::Builtin,
             },
         ];
         for mut profile in registry.profiles {
             profile.directory = expand_path(&profile.directory, home)?;
-            validate_profile(&items, &profile)?;
+            validate_profile_name(&items, &profile)?;
             items.push(profile);
         }
         // 環境変数の指定先は、既定のディレクトリを置き換えずに追加する。
@@ -168,6 +180,7 @@ impl Profiles {
                         name,
                         provider,
                         directory,
+                        origin: ProfileOrigin::Environment,
                     });
                 }
             }
@@ -184,6 +197,7 @@ impl Profiles {
             name: name.trim().to_owned(),
             provider,
             directory,
+            origin: ProfileOrigin::Registry,
         };
         validate_profile(&self.items, &profile)?;
         let mut items = self.items.clone();
@@ -194,19 +208,26 @@ impl Profiles {
     }
 
     pub fn remove(&mut self, index: usize) -> Result<()> {
-        ensure!(index >= 2, "既定のプロファイルは解除できません");
         ensure!(index < self.items.len(), "プロファイルが見つかりません");
+        ensure!(
+            self.items[index].origin != ProfileOrigin::Builtin,
+            "既定のプロファイルは解除できません"
+        );
         let mut items = self.items.clone();
-        items.remove(index);
-        self.persist(&items)?;
+        let removed = items.remove(index);
+        if removed.origin == ProfileOrigin::Registry {
+            self.persist(&items)?;
+        }
         self.items = items;
         Ok(())
     }
 
     pub fn set_provider(&mut self, index: usize, provider: Provider) -> Result<()> {
         ensure!(
-            index >= 2 && index < self.items.len(),
-            "追加プロファイルの名前を指定してください"
+            self.items
+                .get(index)
+                .is_some_and(|profile| profile.origin == ProfileOrigin::Registry),
+            "登録済みの追加プロファイルを指定してください（環境変数由来の種類は変更できません）"
         );
         if self.items[index].provider == provider {
             return Ok(());
@@ -227,15 +248,27 @@ impl Profiles {
 
     fn persist(&mut self, items: &[Profile]) -> Result<()> {
         let registry = Registry {
-            profiles: items.iter().skip(2).cloned().collect(),
+            profiles: items
+                .iter()
+                .filter(|profile| profile.origin == ProfileOrigin::Registry)
+                .cloned()
+                .collect(),
         };
         let text = toml_edit::ser::to_string_pretty(&registry)?;
         self.snapshot.save(&text)?;
         Ok(())
     }
+
+    pub fn validate(&self, index: usize) -> Result<()> {
+        let profile = self
+            .items
+            .get(index)
+            .context("プロファイルが見つかりません")?;
+        validate_profile(&self.items[..index], profile)
+    }
 }
 
-fn validate_profile(items: &[Profile], profile: &Profile) -> Result<()> {
+fn validate_profile_name(items: &[Profile], profile: &Profile) -> Result<()> {
     ensure!(
         !profile.name.is_empty() && !profile.name.chars().any(char::is_control),
         "名前を入力してください（制御文字は使えません）"
@@ -244,6 +277,11 @@ fn validate_profile(items: &[Profile], profile: &Profile) -> Result<()> {
         !items.iter().any(|item| item.name == profile.name),
         "同じ名前が登録されています"
     );
+    Ok(())
+}
+
+fn validate_profile(items: &[Profile], profile: &Profile) -> Result<()> {
+    validate_profile_name(items, profile)?;
     ensure!(
         !items.iter().any(|item| item.provider == profile.provider
             && same_directory(&item.directory, &profile.directory)),

@@ -76,6 +76,9 @@ fn main() -> Result<()> {
                         profile.provider.label(),
                         profile.directory.display()
                     );
+                    if let Err(error) = profiles.validate(index) {
+                        eprintln!("{}: {error:#}", profile.name);
+                    }
                 }
             }
             ProfileCommand::Add {

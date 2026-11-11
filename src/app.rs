@@ -630,16 +630,6 @@ impl App {
             } else {
                 match field.kind {
                     Kind::Bool => "false".into(),
-                    Kind::Raw
-                        if self.profiles.items[self.selected].provider == Provider::Claude =>
-                    {
-                        if field.key().starts_with("permissions.") {
-                            "[]".into()
-                        } else {
-                            "{}".into()
-                        }
-                    }
-                    Kind::Raw => "true".into(),
                     _ => String::new(),
                 }
             }
@@ -749,14 +739,17 @@ impl App {
     fn ensure_loaded(&mut self) {
         if matches!(self.documents[self.selected], Loaded::Pending) {
             let profile = &self.profiles.items[self.selected];
-            self.documents[self.selected] = match Config::load(
-                profile.path(),
-                profile.provider,
-                self.profiles.state_dir.clone(),
-            ) {
-                Ok(config) => Loaded::Ready(Box::new(config)),
-                Err(error) => Loaded::Failed(format!("{error:#}")),
-            };
+            self.documents[self.selected] =
+                match self.profiles.validate(self.selected).and_then(|()| {
+                    Config::load(
+                        profile.path(),
+                        profile.provider,
+                        self.profiles.state_dir.clone(),
+                    )
+                }) {
+                    Ok(config) => Loaded::Ready(Box::new(config)),
+                    Err(error) => Loaded::Failed(format!("{error:#}")),
+                };
         }
     }
     fn reload(&mut self) {
