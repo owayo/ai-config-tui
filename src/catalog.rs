@@ -138,8 +138,8 @@ pub fn help(provider: Provider, key: &str) -> (String, String) {
     let parts = key.split('.').collect::<Vec<_>>();
     let mut labels = Vec::new();
     let mut start = 0;
-    // Keep the most specific known context, without borrowing its explanation
-    // for a child whose behavior may differ.
+    // 名前には最も具体的な既知の親を使う。子の動作が同じとは限らないため、
+    // 親の説明は流用しない。
     for length in (1..parts.len()).rev() {
         if let Some(text) = names.get(&parts[..length].join(".")) {
             labels.push(text.label.clone());

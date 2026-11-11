@@ -277,7 +277,7 @@ pub fn fields(config: &Config) -> Vec<Field> {
             Parsed::Json(root) => collect_json(root, &[], &mut fields),
             Parsed::Toml(root) => collect_toml(root.as_table(), &[], &mut fields),
         }
-        // Provider IDs are user-defined and may not be in the reference snapshot.
+        // プロバイダーIDは利用者が定義でき、同梱の一覧にないものもある。
         let providers = match parsed {
             Parsed::Toml(root) => root
                 .get("model_providers")
@@ -491,8 +491,8 @@ impl SettingNode {
     }
 
     fn retain_matches(&mut self, query: &str) -> bool {
-        // A matching parent includes its children. A matching child keeps its
-        // ancestors, including the real parent field and its editing metadata.
+        // 親が一致したら子も含める。子が一致したら親を残し、実在する親項目の
+        // 編集用メタデータも保持する。
         if self
             .field
             .as_ref()

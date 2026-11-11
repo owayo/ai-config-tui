@@ -67,7 +67,7 @@ impl Config {
                     Json::Number(value) => {
                         item.as_integer().is_some_and(|n| Some(n) == value.as_i64())
                     }
-                    // TOML dates, tables and arrays stay opaque to the scalar picker.
+                    // 日時・テーブル・配列は、単一値の候補との照合対象にしない。
                     _ => false,
                 }
             }

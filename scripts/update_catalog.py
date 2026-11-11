@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
-"""Refresh setting keys, types and choices from the vendors' official references.
+"""公式リファレンスから設定のキー・型・候補を更新する。
 
-Only configuration metadata is stored; reference prose and examples are not copied.
-The application uses the checked-in snapshot and does not need network access.
+保存するのは設定のメタデータだけで、資料の本文や例はコピーしない。
+アプリは同梱の一覧を使うため、起動時の通信は不要。
 """
 
 import argparse
@@ -36,10 +36,10 @@ GENERIC_TYPES = {
 
 
 def plain(text):
-    """Remove Markdown decoration from a metadata fragment.
+    """メタデータの断片からMarkdownの装飾を除く。
 
     Returns:
-        str: The plain metadata text.
+        str: 装飾を除いたメタデータ。
 
     """
     text = re.sub(r"\[([^\]]+)\]\([^)]*\)", r"\1", text)
@@ -47,10 +47,10 @@ def plain(text):
 
 
 def unique(values):
-    """Keep values in their original order without duplicates.
+    """値の順序を保って重複を除く。
 
     Returns:
-        list: Unique values in source order.
+        list: 元の順序で並んだ重複のない値。
 
     """
     result = []
@@ -61,10 +61,10 @@ def unique(values):
 
 
 def metadata(key, type_name, scope, source):
-    """Create an entry using only documented configuration metadata.
+    """資料に記載された設定のメタデータから項目を作る。
 
     Returns:
-        dict: The entry and its initial editor metadata.
+        dict: 設定項目と編集用の初期メタデータ。
 
     """
     lower = type_name.lower()
@@ -97,10 +97,10 @@ def metadata(key, type_name, scope, source):
 
 
 def notice_introduction(text):
-    """Normalize the first paragraph of a reference entry or warning block.
+    """設定の説明や警告ブロックの最初の段落を正規化する。
 
     Returns:
-        str: Plain introductory text without the warning markup.
+        str: 警告の装飾を除いた導入文。
 
     """
     text = re.sub(r"(?m)^\s*> ?", "", text).strip()
@@ -110,20 +110,20 @@ def notice_introduction(text):
 
 
 def is_deprecated(text):
-    """Recognize an explicit deprecation notice for the setting itself.
+    """設定自体が非推奨と明記されているかを判定する。
 
     Returns:
-        bool: Whether the reference marks this setting as deprecated.
+        bool: この設定が資料で非推奨とされていれば真。
 
     """
     return bool(re.match(r"deprecated\b", notice_introduction(text), re.IGNORECASE))
 
 
 def is_retired(text):
-    """Recognize explicit removal or unconditional no-effect notices.
+    """廃止、または無条件で無効と明記されているかを判定する。
 
     Returns:
-        bool: Whether the setting has been removed or no longer has an effect.
+        bool: 設定が廃止済み、または効果がなければ真。
 
     """
     introduction = notice_introduction(text)
@@ -144,10 +144,10 @@ def is_retired(text):
 
 
 def claude_entries(text, models):
-    """Read the official settings headings and model alias table.
+    """公式の設定見出しとモデルの別名一覧を読み取る。
 
     Returns:
-        list: Settings entries including scope and finite choices.
+        list: 適用範囲と候補を含む設定項目。
 
     """
     matches = list(re.finditer(r"^### `([^`]+)`\s*$", text, re.MULTILINE))
@@ -206,7 +206,7 @@ def claude_entries(text, models):
             entry["custom"] = False
         default = re.search(r"^\* \*\*Default\*\*: (.+)", body, re.MULTILINE)
         if default:
-            # Keep only literal defaults, never copy the reference's prose.
+            # 既定値のリテラルだけを保持し、資料の説明文はコピーしない。
             literals = re.findall(r"`([^`]+)`", default[1])
             entry["default"] = (
                 literals[0]
@@ -253,10 +253,10 @@ def claude_entries(text, models):
 
 
 def variants(node, schema, seen=()):
-    """Resolve schema references and union branches with recursion protection.
+    """循環参照を防ぎながら、スキーマの参照と共用型の分岐を解決する。
 
     Returns:
-        list: Resolved schema variants.
+        list: 参照を解決したスキーマの候補。
 
     """
     if "$ref" in node:
@@ -273,10 +273,10 @@ def variants(node, schema, seen=()):
 
 
 def schema_at(parts, schema):
-    """Resolve a documented path, including dynamic names, in the schema.
+    """可変の名前を含む設定パスをスキーマから解決する。
 
     Returns:
-        list: The variants found at the requested path.
+        list: 指定されたパスにあるスキーマの候補。
 
     """
     nodes = [schema]
@@ -302,10 +302,10 @@ def schema_at(parts, schema):
 
 
 def schema_paths(node, schema, prefix=(), seen=()):
-    """Enumerate fixed schema properties to supplement the reference index.
+    """固定名のプロパティを列挙し、リファレンスの一覧を補う。
 
     Yields:
-        tuple: A property path and its schema node.
+        tuple: プロパティのパスと対応するスキーマのノード。
 
     """
     if len(prefix) > 6:
@@ -318,10 +318,10 @@ def schema_paths(node, schema, prefix=(), seen=()):
 
 
 def codex_entries(text, schema, models):
-    """Combine the official config table, schema and recommended models.
+    """公式の設定表・スキーマ・推奨モデルを合わせる。
 
     Returns:
-        list: Entries from the reference and schema without prose or examples.
+        list: 資料の本文や例を含まない設定項目。
 
     """
     section = text.split("## `config.toml`", 1)[1].split("## `requirements.toml`", 1)[0]
@@ -442,7 +442,7 @@ def codex_entries(text, schema, models):
 
 
 def preserve_legacy(catalog, previous):
-    """Keep known removed or deprecated definitions if their entries disappear."""
+    """資料から消えた項目も、廃止・非推奨と確認済みなら定義を残す。"""
     for provider in ("claude", "codex"):
         keys = {entry["key"] for entry in catalog[provider]}
         catalog[provider].extend(
@@ -454,10 +454,10 @@ def preserve_legacy(catalog, previous):
 
 
 def main():
-    """Refresh and validate the offline catalog snapshot."""
+    """同梱する設定一覧を更新して検証する。"""
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
-        "--source-dir", type=Path, help="Read cached sources named like claude-settings"
+        "--source-dir", type=Path, help="claude-settings等の名前で保存した資料を読む"
     )
     args = parser.parse_args()
     destination = Path(__file__).resolve().parents[1] / "data/settings-catalog.json"
@@ -487,10 +487,10 @@ def main():
                 )
 
         def read(name):
-            """Read one cached official source.
+            """保存済みの公式資料を1つ読む。
 
             Returns:
-                str: The source text in UTF-8.
+                str: UTF-8で読み取った資料の本文。
 
             """
             return (root / name).read_text(encoding="utf-8")

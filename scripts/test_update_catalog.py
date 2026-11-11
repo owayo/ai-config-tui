@@ -1,4 +1,4 @@
-"""Regression tests for lifecycle metadata from official reference formats."""
+"""公式資料から取得する廃止・非推奨情報の回帰テスト。"""
 
 import json
 import unittest
@@ -13,17 +13,17 @@ from update_catalog import (
 
 
 class RetirementTests(unittest.TestCase):
-    """Distinguish removed settings from supported legacy aliases."""
+    """廃止済みの設定と、利用可能な従来の別名を区別する。"""
 
     def test_deprecation_is_explicit_and_does_not_match_other_settings(self):
-        """Read warning blocks without marking a replacement as deprecated."""
+        """警告を読み取り、置き換え先の設定を非推奨と誤判定しない。"""
         self.assertTrue(
             is_deprecated("> [!WARNING]\n>\n> **Deprecated** but still honored.")
         )
         self.assertFalse(is_deprecated("This setting replaces a deprecated option."))
 
     def test_explicit_removal_and_no_effect_notices(self):
-        """Recognize warning blocks and unconditional no-effect descriptions."""
+        """警告ブロックと、無条件で効果がないという説明を認識する。"""
         for text in [
             (
                 "> [!WARNING]\n>\n> Removed in version 1. "
@@ -38,7 +38,7 @@ class RetirementTests(unittest.TestCase):
                 self.assertTrue(is_retired(text))
 
     def test_supported_aliases_and_conditional_ignores_remain_active(self):
-        """Do not infer removal from deprecation or conditional behavior."""
+        """非推奨や条件付きの動作だけで廃止と判定しない。"""
         for text in [
             "Deprecated alias. It is still honored.",
             "Maximum depth for V1. Ignored by V2.",
@@ -51,7 +51,7 @@ class RetirementTests(unittest.TestCase):
                 self.assertFalse(is_retired(text))
 
     def test_claude_warning_blocks_are_independent_of_scope(self):
-        """Detect removal even when the warning replaces the normal type block."""
+        """通常の型情報が警告に置き換わっていても廃止を検出する。"""
         bodies = {
             "removed_setting": (
                 "> [!WARNING]\n>\n> Removed in version 1. No longer used."
@@ -82,7 +82,7 @@ class RetirementTests(unittest.TestCase):
         self.assertFalse(entries["model"]["retired"])
 
     def test_codex_reference_and_schema_sibling_descriptions(self):
-        """Read descriptions beside allOf without retiring supported aliases."""
+        """allOfの隣の説明を読み、利用可能な別名を廃止と誤判定しない。"""
         descriptions = {
             "model": "Model selection.",
             "review_model": "Review model.",
@@ -153,7 +153,7 @@ class RetirementTests(unittest.TestCase):
         self.assertFalse(entries["max_depth"]["retired"])
 
     def test_known_removals_survive_missing_reference_entries(self):
-        """Retain known removals without guessing that missing active keys retired."""
+        """確認済みの廃止情報を残し、未掲載の有効な項目を廃止と推測しない。"""
         removed = {"key": "removed_option", "retired": True}
         deprecated = {"key": "deprecated_option", "retired": False, "deprecated": True}
         previous = {

@@ -10,7 +10,7 @@ use tempfile::Builder;
 
 const MAX_BYTES: u64 = 5 * 1024 * 1024;
 
-/// A snapshot keeps the logical path as well as the actual symlink target.
+/// 指定されたパスと、シンボリックリンクを解決した実際の保存先を保持する。
 #[derive(Debug)]
 pub struct Snapshot {
     pub path: PathBuf,
@@ -90,7 +90,7 @@ impl Snapshot {
             #[cfg(unix)]
             {
                 use std::os::unix::fs::MetadataExt;
-                // geteuid has no preconditions and cannot fail.
+                // geteuid は事前条件がなく、失敗しない。
                 ensure!(
                     metadata.uid() == unsafe { libc::geteuid() },
                     "所有者が異なる設定ファイルには保存できません"
@@ -128,7 +128,7 @@ impl Snapshot {
             None
         };
 
-        // Recheck after writing the temporary file and backup, immediately before rename.
+        // 一時ファイルとバックアップを書いた後、置き換えの直前に再確認する。
         self.check_unchanged()?;
         if self.original.is_some() {
             temporary
