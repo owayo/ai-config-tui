@@ -1,6 +1,6 @@
 [package]
 name = "ai-config-tui"
-version = "26.11.100"
+version = "26.11.101"
 edition = "2024"
 rust-version = "1.99"
 description = "A terminal editor for Claude Code and Codex configuration profiles"
