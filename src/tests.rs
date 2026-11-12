@@ -788,6 +788,14 @@ fn shell_environment_overrides_and_api_key_headers_are_masked() {
             "[mcp_servers.work.http_headers]\nX-Api-Key = 'hidden123'\n",
             "mcp_servers.work.http_headers.X-Api-Key",
         ),
+        (
+            "[model_providers.work.http_headers]\nCookie = 'hidden123'\n",
+            "model_providers.work.http_headers.Cookie",
+        ),
+        (
+            "[otel.exporter.otlp-http.headers]\nx-vendor-credential = 'hidden123'\n",
+            "otel.exporter.otlp-http.headers.x-vendor-credential",
+        ),
     ] {
         let fixture = Fixture::new();
         fixture.write(".codex/config.toml", text);
@@ -806,6 +814,137 @@ fn shell_environment_overrides_and_api_key_headers_are_masked() {
         terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
         assert!(screen_text(&terminal).contains("hidden123"));
     }
+}
+
+#[test]
+fn json_item_edits_keep_unknown_numbers_without_rounding() {
+    let fixture = Fixture::new();
+    let original = r#"{"model":"before","large":12345678901234567890123,"precise":0.12345678901234567890123,"nested":{"tiny":1.234567890123456789e-100}}"#;
+    let mut config = fixture.config(Provider::Claude, original);
+    config.set(&path(&["model"]), "after", true).unwrap();
+    for literal in [
+        "12345678901234567890123",
+        "0.12345678901234567890123",
+        "1.234567890123456789e-100",
+    ] {
+        assert!(config.text.contains(literal), "number changed: {literal}");
+    }
+    config.save().unwrap();
+    assert_eq!(
+        fs::read_to_string(fixture.path("settings.json")).unwrap(),
+        config.text
+    );
+    assert!(config.undo());
+    assert_eq!(config.text, original);
+}
+
+#[test]
+fn numeric_toml_values_exclude_outer_comments_and_keep_them_when_saved() {
+    let fixture = Fixture::new();
+    let mut config = fixture.config(
+        Provider::Codex,
+        "tool_output_token_limit = 1000 # existing limit\nextra = 0x10 # extra limit\n",
+    );
+    let rows = fields::fields(&config);
+    for (key, expected) in [("tool_output_token_limit", "1000"), ("extra", "0x10")] {
+        let field = rows.iter().find(|field| field.key() == key).unwrap();
+        assert_eq!(field.value.as_deref(), Some(expected));
+    }
+    config
+        .set(&path(&["tool_output_token_limit"]), "2000", false)
+        .unwrap();
+    assert!(config.text.contains("2000 # existing limit"));
+    assert!(config.text.contains("0x10 # extra limit"));
+}
+
+#[test]
+fn numeric_limits_are_visible_while_unknown_numeric_secrets_stay_masked() {
+    let fixture = Fixture::new();
+    let config = fixture.config(Provider::Codex,
+        "tool_output_token_limit = 1000\nunknown_token = 123456\n[mcp_servers.work.env]\nTOKEN = '654321'\n");
+    let rows = fields::fields(&config);
+    for (key, sensitive) in [
+        ("tool_output_token_limit", false),
+        ("unknown_token", true),
+        ("mcp_servers.work.env.TOKEN", true),
+    ] {
+        assert_eq!(
+            rows.iter()
+                .find(|field| field.key() == key)
+                .unwrap()
+                .sensitive,
+            sensitive,
+            "{key}"
+        );
+    }
+}
+
+#[test]
+fn array_templates_do_not_describe_named_toml_tables() {
+    let fixture = Fixture::new();
+    let config = fixture.config(
+        Provider::Codex,
+        "[skills.config.work]\npath = '/tmp/example-skill'\n",
+    );
+    let field = fields::fields(&config)
+        .into_iter()
+        .find(|field| field.key() == "skills.config.work.path")
+        .unwrap();
+    assert!(!field.common);
+    assert!(field.source.is_empty());
+}
+
+#[test]
+fn mcp_readiness_picker_keeps_quoted_names_comments_and_unrelated_settings() {
+    let fixture = Fixture::new();
+    let original = "[mcp_servers.\"work.example\"]\nstartup_readiness = 'connection' # 接続の完了を待つ\nunknown_value = 42\n";
+    let file = fixture.write(".codex/config.toml", original);
+    let mut app = App::new(
+        fixture.profiles(),
+        fixture.directory.path().to_owned(),
+        Some("Codex · Default"),
+    )
+    .unwrap();
+    select_field(&mut app, "mcp_servers.work.example.startup_readiness");
+    let Some(Modal::Select { options, .. }) = &app.modal else {
+        panic!("候補の選択画面が開いていません");
+    };
+    let choice = options
+        .iter()
+        .find(|option| option.label == "catalog")
+        .unwrap();
+    assert!(choice.help.description.contains("キャッシュ"));
+    choose(&mut app, "catalog");
+    app.config_mut().unwrap().save().unwrap();
+    assert_eq!(
+        fs::read_to_string(file).unwrap(),
+        original.replace("'connection'", "\"catalog\"")
+    );
+}
+
+#[test]
+fn claude_string_or_array_setting_uses_json_input_and_preserves_unknown_keys() {
+    let fixture = Fixture::new();
+    let file = fixture.write(
+        ".claude/settings.json",
+        r#"{"forceLoginOrgUUID":"before","unknown":"keep"}"#,
+    );
+    let mut app = fixture.app();
+    select_field(&mut app, "forceLoginOrgUUID");
+    let Some(Modal::Edit { editor, plain, .. }) = &mut app.modal else {
+        panic!("JSONの入力画面が開いていません");
+    };
+    assert!(!*plain);
+    *editor = Editor::new(
+        r#"["00000000-0000-0000-0000-000000000001","00000000-0000-0000-0000-000000000002"]"#,
+    );
+    app.handle_key(control('s'));
+    assert!(app.modal.is_none());
+    app.config_mut().unwrap().save().unwrap();
+    let saved: serde_json::Value =
+        serde_json::from_str(&fs::read_to_string(file).unwrap()).unwrap();
+    assert_eq!(saved["forceLoginOrgUUID"].as_array().unwrap().len(), 2);
+    assert_eq!(saved["unknown"], "keep");
 }
 
 #[test]

@@ -636,22 +636,6 @@
       "label": "カスタマイズ元の制限",
       "description": "スキル・エージェント・フック・MCPの読み込み元を制限します。"
     },
-    "strictPluginOnlyCustomization.agents": {
-      "label": "エージェントの読み込み元制限",
-      "description": "エージェントをプラグインと管理者設定に限定します。"
-    },
-    "strictPluginOnlyCustomization.hooks": {
-      "label": "フックの読み込み元制限",
-      "description": "フックをプラグインと管理者設定に限定します。"
-    },
-    "strictPluginOnlyCustomization.mcp": {
-      "label": "MCPの読み込み元制限",
-      "description": "MCPをプラグインと管理者設定に限定します。"
-    },
-    "strictPluginOnlyCustomization.skills": {
-      "label": "スキルの読み込み元制限",
-      "description": "スキルをプラグインと管理者設定に限定します。"
-    },
     "enabledPlugins": {
       "label": "プラグインの有効化",
       "description": "プラグインごとの有効・無効。"
@@ -987,6 +971,14 @@
     "teammateDefaultModel": {
       "label": "チームの既定モデル（廃止）",
       "description": "チームメンバーのモデル指定に関する旧設定です。"
+    },
+    "permissions.blockWritesOutsideWorkingDirectories": {
+      "label": "作業ディレクトリ外への書き込みを禁止",
+      "description": "Claude Code 2.1.314以降で、Write・Edit・NotebookEditによる作業ディレクトリ外への書き込みを禁止します。一部の内部ファイルは例外です。シェル・MCP・フックは対象外です。読み込んだ設定のどれかがtrueなら有効になり、falseだけでは解除できません。"
+    },
+    "permissions.denyInsteadOfPrompting": {
+      "label": "承認待ちの操作を拒否",
+      "description": "Claude Code 2.1.319以降で、承認待ちになる操作を拒否して処理を続けます。許可ルールや権限モードで承認される操作は実行できます。質問・計画ツールの一部も使えなくなります。ユーザー設定・管理者設定・--settings向けです。"
     }
   },
   "codex": {
@@ -1118,10 +1110,6 @@
       "label": "応答の詳しさ",
       "description": "モデルの文章をどの程度詳しくするか指定します。"
     },
-    "model_supports_reasoning_summaries": {
-      "label": "推論要約への対応",
-      "description": "使用モデルが推論要約に対応するか指定します。"
-    },
     "project_root_markers": {
       "label": "プロジェクトの目印",
       "description": "親ディレクトリからプロジェクトの境界を見つける目印。"
@@ -1161,10 +1149,6 @@
     "disable_paste_burst": {
       "label": "貼り付け検出の無効化（旧形式）",
       "description": "端末UIの貼り付け検出に関する旧設定。"
-    },
-    "windows_wsl_setup_acknowledged": {
-      "label": "WSL案内の確認状態",
-      "description": "WindowsでのWSL初期設定案内の確認状態。"
     },
     "chatgpt_base_url": {
       "label": "ChatGPTの接続先",
@@ -1367,8 +1351,8 @@
       "description": "読み込む名前付き設定レイヤー。"
     },
     "profiles": {
-      "label": "名前付き設定レイヤー",
-      "description": "設定を切り替える名前付きレイヤーの定義。"
+      "label": "旧形式の名前付き設定",
+      "description": "config.toml内の旧形式の名前付き設定です。現行の--profileでは別の<名前>.config.tomlを使います。同じ名前の旧テーブルがあると起動時にエラーになります。本ツールは別ファイルへの自動移行を行いません。"
     },
     "projects": {
       "label": "プロジェクトごとの設定",
@@ -1453,10 +1437,6 @@
     "tui.keymap.<context>.<action>": {
       "label": "場面・操作ごとのキー割り当て",
       "description": "任意の操作に割り当てるキー。"
-    },
-    "tui.keymap.<context>.<action> = []": {
-      "label": "キー割り当ての解除",
-      "description": "操作に割り当てたキーを空の配列で解除します。"
     },
     "tui.copy_on_select": {
       "label": "選択した文字列をコピー",
@@ -1795,8 +1775,8 @@
       "description": "この接続先の分かりやすい表示名。"
     },
     "model_providers.<id>.base_url": {
-      "label": "プロバイダーの接続先",
-      "description": "OpenAI互換APIのベースURL。"
+      "label": "Vertex AIの接続先URL",
+      "description": "組み込みGCPプロバイダーの接続先を指定します。未指定ならプロジェクトIDとロケーションから組み立てます。"
     },
     "model_providers.<id>.model_catalog_url": {
       "label": "プロバイダーのモデル一覧URL",
@@ -1953,6 +1933,94 @@
     "plugins.<plugin>.mcp_servers.<server>.enabled_tools": {
       "label": "プラグインMCPの許可ツール",
       "description": "このMCPサーバーが公開するツールの許可リスト。"
+    },
+    "apps.<id>.omit_tools_from": {
+      "label": "アプリのツールを公開しない面",
+      "description": "このアプリのツールをdirect・deferred・code_modeの指定した公開面から除きます。MCPサーバー側の指定も合わせて適用されます。"
+    },
+    "mcp_servers.<id>.environment_id": {
+      "label": "MCPサーバーの実行環境",
+      "description": "MCPサーバーを実行・接続する環境のID。既定はlocalです。登録済みの実行環境を指定すると、その環境で標準入出力サーバーを起動するかHTTPサーバーへ接続します。"
+    },
+    "mcp_servers.<id>.omit_tools_from": {
+      "label": "MCPのツールを公開しない面",
+      "description": "direct（初期のツール一覧）・deferred（ツール検索）・code_mode（スクリプト）の指定した面からツールを除きます。禁止にはdisabled_toolsを使います。空配列は継承した除外指定を解除します。"
+    },
+    "mcp_servers.<id>.startup_readiness": {
+      "label": "MCPの起動準備の判定",
+      "description": "既定のconnectionは接続の完了を待ちます。catalogは有効なキャッシュ済みツール一覧があれば接続中でも起動できます。ツールの実行には接続が必要です。"
+    },
+    "mcp_servers.<id>.supports_parallel_tool_calls": {
+      "label": "MCPツールの並列実行",
+      "description": "このサーバーの全ツールを並列実行できるものとして扱います。全ツールが同時呼び出しに対応する場合だけ有効にします。既定はfalseです。"
+    },
+    "mcp_servers.<id>.tool_input_schema_max_bytes": {
+      "label": "MCP入力スキーマの圧縮基準（バイト）",
+      "description": "通常のMCPツールの入力スキーマがこのUTF-8バイト数を超えたら小さくします。正の整数で、既定は5000バイト。明示した値はCode Modeの入力型表示にも使われます。"
+    },
+    "model_providers.gcp.base_url": {
+      "label": "Vertex AIの接続先URL",
+      "description": "組み込みGCPプロバイダーの接続先を指定します。未指定ならプロジェクトIDとロケーションから組み立てます。"
+    },
+    "model_providers.gcp.credential_file": {
+      "label": "GCPのADC認証ファイル",
+      "description": "Google Application Default Credentialsファイルの絶対パス。認証コマンドの環境だけでGOOGLE_APPLICATION_CREDENTIALSを上書きします。"
+    },
+    "model_providers.gcp.location": {
+      "label": "Vertex AIのロケーション",
+      "description": "組み込みGCPプロバイダーで使うロケーション。GOOGLE_CLOUD_LOCATIONより優先し、どちらも未指定ならglobalです。"
+    },
+    "model_providers.gcp.project_id": {
+      "label": "Vertex AIのプロジェクトID",
+      "description": "組み込みGCPプロバイダーで接続先を決めるGoogle CloudプロジェクトID。GOOGLE_CLOUD_PROJECTより優先します。"
+    },
+    "skills.config.<index>.name": {
+      "label": "設定対象のスキル名",
+      "description": "この名前に完全一致するスキルを対象にします。各配列要素ではnameかpathのどちらかを指定します。"
+    },
+    "memories.version": {
+      "label": "メモリの保存形式",
+      "description": "v1かv2を選びます。メモリが有効で既存のmemoriesディレクトリがなければ既定はv2、あればv1です。dual_writeを明示的にfalseにした場合は既定がv1になります。"
+    },
+    "memories.dual_write": {
+      "label": "メモリを両形式へ書き出す",
+      "description": "v1選択中にtrueを指定すると、読み取りはv1のまま両形式を生成します。v2選択中はv2だけを書き出します。"
+    },
+    "otel.span_attributes": {
+      "label": "テレメトリーのスパン属性",
+      "description": "スパンへ付ける文字列のキーと値の対応です。"
+    },
+    "otel.tracestate": {
+      "label": "テレメトリーのトレース状態",
+      "description": "送信先のキーごとに、文字列のキーと値の対応を設定します。"
+    },
+    "features.rollout_budget.reminder_at_remaining_tokens": {
+      "label": "予算通知を出す残りトークン数",
+      "description": "重み付きの残りトークン数が指定した値を下回ったときに通知します。整数の配列で指定します。"
+    },
+    "shell_environment_policy.filters": {
+      "label": "環境変数の名前別フィルター",
+      "description": "環境変数名のパターンと適用する処理の対応です。設定レイヤー間で、パターンの大文字と小文字を区別せず統合します。従来の配列形式との同時指定には制約があります。"
+    },
+    "model_providers.<id>.credential_file": {
+      "label": "GCPのADC認証ファイル",
+      "description": "Google Application Default Credentialsファイルの絶対パス。認証コマンドの環境だけでGOOGLE_APPLICATION_CREDENTIALSを上書きします。"
+    },
+    "model_providers.<id>.location": {
+      "label": "Vertex AIのロケーション",
+      "description": "組み込みGCPプロバイダーで使うロケーション。GOOGLE_CLOUD_LOCATIONより優先し、どちらも未指定ならglobalです。"
+    },
+    "model_providers.<id>.project_id": {
+      "label": "Vertex AIのプロジェクトID",
+      "description": "組み込みGCPプロバイダーで接続先を決めるGoogle CloudプロジェクトID。GOOGLE_CLOUD_PROJECTより優先します。"
+    },
+    "tui.presets.<digit>.input": {
+      "label": "定型入力の本文",
+      "description": "/presetsで選べる0〜9の枠に、プロンプトかスラッシュコマンドを保存します。空でないUTF-8の8000バイト以内の文字列を指定します。!で始まるシェルコマンドは使えません。"
+    },
+    "tui.presets.<digit>.label": {
+      "label": "定型入力の名前",
+      "description": "定型入力の選択画面とショートカットの案内に表示する名前です。省略できます。"
     }
   },
   "segments": {

@@ -20,7 +20,7 @@ crossterm = "0.29"
 dirs = "7.0.0"
 ratatui = { version = "0.30.2", features = ["unstable-rendered-line-info"] }
 serde = { version = "1.0.229", features = ["derive"] }
-serde_json = { version = "1.0.154", features = ["preserve_order"] }
+serde_json = { version = "1.0.154", features = ["preserve_order", "arbitrary_precision"] }
 similar = "3.2.1"
 tempfile = "3.27.0"
 toml_edit = { version = "0.25.17", features = ["serde"] }

@@ -4,6 +4,10 @@ use crate::{
     profile::Provider,
 };
 use serde_json::Value as Json;
+use std::{
+    collections::{HashMap, HashSet},
+    sync::OnceLock,
+};
 use toml_edit::TableLike;
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize)]
@@ -63,7 +67,7 @@ impl Field {
     }
     pub fn disabled_reason(&self) -> Option<&str> {
         self.read_only.as_deref().or(if self.template {
-            Some("任意の名前を含むテンプレートです。Eの全体編集で具体的な名前を設定してください。既存の項目は具体名でも一覧に表示されます。")
+            Some("任意の名前や配列要素を含む参照用のテンプレートです。Eの全体編集で実際の名前や配列を設定してください。既存の名前付き項目は具体名でも一覧に表示されます。")
         } else { None })
     }
 }
@@ -274,9 +278,18 @@ pub fn fields(config: &Config) -> Vec<Field> {
                 }
             }
         }
+        // 定義とその順番は同梱カタログで固定。値や具体名を含めず、検索用の
+        // パスとテンプレートの位置だけをプロバイダーごとに再利用する。
+        static CLAUDE_PATHS: OnceLock<FieldPaths> = OnceLock::new();
+        static CODEX_PATHS: OnceLock<FieldPaths> = OnceLock::new();
+        let paths = match config.provider {
+            Provider::Claude => &CLAUDE_PATHS,
+            Provider::Codex => &CODEX_PATHS,
+        }
+        .get_or_init(|| FieldPaths::new(&fields));
         match parsed {
-            Parsed::Json(root) => collect_json(root, &[], &mut fields),
-            Parsed::Toml(root) => collect_toml(root.as_table(), &[], &mut fields),
+            Parsed::Json(root) => collect_json(root, &[], &mut fields, paths),
+            Parsed::Toml(root) => collect_toml(root.as_table(), &[], &mut fields, paths),
         }
         // プロバイダーIDは利用者が定義でき、同梱の一覧にないものもある。
         let providers = match parsed {
@@ -303,7 +316,8 @@ pub fn fields(config: &Config) -> Vec<Field> {
     // 検索で子項目が隠れていても、秘密情報を含む親の値はマスクする。
     let mut sensitive_ancestors = std::collections::HashSet::new();
     for field in &mut fields {
-        field.sensitive = field.value.is_some() && sensitive_path(&field.path);
+        field.sensitive =
+            field.value.is_some() && sensitive_path(&field.path) && !public_scalar(config, field);
         if field.sensitive {
             for length in 1..=field.path.len() {
                 sensitive_ancestors.insert(field.path[..length].to_vec());
@@ -316,13 +330,41 @@ pub fn fields(config: &Config) -> Vec<Field> {
     fields
 }
 
+fn public_scalar(config: &Config, field: &Field) -> bool {
+    // 公式定義が数値・真偽値の項目だけを除外する。未知のキーや環境変数の
+    // 数字だけの秘密情報は、文字列かどうかにかかわらずマスクを保つ。
+    if !field.common {
+        return false;
+    }
+    let numeric =
+        field.suggestions.starts_with("integer") || field.suggestions.starts_with("number");
+    match &config.parsed {
+        Some(Parsed::Json(root)) => field
+            .path
+            .iter()
+            .try_fold(root, |value, key| value.get(key))
+            .is_some_and(|value| {
+                (numeric && value.is_number()) || (field.kind == Kind::Bool && value.is_boolean())
+            }),
+        Some(Parsed::Toml(root)) => field
+            .path
+            .iter()
+            .try_fold(root.as_item(), |value, key| value.get(key))
+            .is_some_and(|value| {
+                (numeric && (value.is_integer() || value.is_float()))
+                    || (field.kind == Kind::Bool && value.is_bool())
+            }),
+        None => false,
+    }
+}
+
 fn sensitive_path(path: &[String]) -> bool {
     if path.len() >= 2 && path[0] == "shell_environment_policy" && path[1] == "set" {
         return true;
     }
     path.iter().any(|part| {
         let key = part.to_lowercase().replace('-', "_");
-        key == "env"
+        matches!(key.as_str(), "env" | "headers" | "http_headers")
             || [
                 "token",
                 "secret",
@@ -407,35 +449,69 @@ fn get_value(parsed: &Parsed, path: &[String]) -> Option<String> {
             for key in path {
                 item = item.get(key)?;
             }
-            Some(
-                item.as_str()
-                    .map(String::from)
-                    .or_else(|| item.as_bool().map(|value| value.to_string()))
-                    .unwrap_or_else(|| item.to_string().trim().into()),
-            )
+            Some(toml_display(item))
         }
     }
 }
 
-fn collect_json(value: &Json, prefix: &[String], fields: &mut Vec<Field>) {
+fn toml_display(item: &toml_edit::Item) -> String {
+    if let Some(value) = item.as_value() {
+        if let Some(text) = value.as_str() {
+            return text.into();
+        }
+        let mut value = value.clone();
+        value.decor_mut().clear();
+        value.to_string()
+    } else {
+        item.to_string().trim().into()
+    }
+}
+
+struct FieldPaths {
+    exact: HashSet<Vec<String>>,
+    parents: HashSet<Vec<String>>,
+    templates: HashMap<usize, Vec<usize>>,
+}
+
+impl FieldPaths {
+    fn new(fields: &[Field]) -> Self {
+        let mut paths = Self {
+            exact: HashSet::with_capacity(fields.len()),
+            parents: HashSet::new(),
+            templates: HashMap::new(),
+        };
+        for (index, field) in fields.iter().enumerate() {
+            paths.exact.insert(field.path.clone());
+            for length in 1..field.path.len() {
+                paths.parents.insert(field.path[..length].to_vec());
+            }
+            if field.template {
+                paths
+                    .templates
+                    .entry(field.path.len())
+                    .or_default()
+                    .push(index);
+            }
+        }
+        paths
+    }
+}
+
+fn collect_json(value: &Json, prefix: &[String], fields: &mut Vec<Field>, paths: &FieldPaths) {
     let Some(object) = value.as_object() else {
         return;
     };
     for (key, value) in object {
         let mut path = prefix.to_vec();
         path.push(key.clone());
-        if fields.iter().any(|field| field.path == path) {
-            if value.is_object()
-                && fields
-                    .iter()
-                    .any(|field| field.path.len() > path.len() && field.path.starts_with(&path))
-            {
-                collect_json(value, &path, fields);
+        if paths.exact.contains(&path) {
+            if value.is_object() && paths.parents.contains(&path) {
+                collect_json(value, &path, fields, paths);
             }
             continue;
         }
-        if fields.iter().any(|field| field.path.starts_with(&path)) && value.is_object() {
-            collect_json(value, &path, fields);
+        if paths.parents.contains(&path) && value.is_object() {
+            collect_json(value, &path, fields, paths);
         } else {
             let kind = match value {
                 Json::String(_) => Kind::String,
@@ -446,23 +522,28 @@ fn collect_json(value: &Json, prefix: &[String], fields: &mut Vec<Field>) {
                 .as_str()
                 .map(String::from)
                 .unwrap_or_else(|| serde_json::to_string_pretty(value).unwrap_or_default());
-            append_extra(fields, path, text, kind);
+            append_extra(fields, path, text, kind, paths);
         }
     }
 }
 
-fn collect_toml(table: &dyn TableLike, prefix: &[String], fields: &mut Vec<Field>) {
+fn collect_toml(
+    table: &dyn TableLike,
+    prefix: &[String],
+    fields: &mut Vec<Field>,
+    paths: &FieldPaths,
+) {
     for (key, value) in table.iter() {
         let mut path = prefix.to_vec();
         path.push(key.into());
-        if fields.iter().any(|field| field.path == path) {
+        if paths.exact.contains(&path) {
             if let Some(table) = value.as_table_like() {
-                collect_toml(table, &path, fields);
+                collect_toml(table, &path, fields, paths);
             }
             continue;
         }
         if let Some(table) = value.as_table_like().filter(|table| !table.is_empty()) {
-            collect_toml(table, &path, fields);
+            collect_toml(table, &path, fields, paths);
         } else {
             let kind = if value.is_str() {
                 Kind::String
@@ -473,24 +554,32 @@ fn collect_toml(table: &dyn TableLike, prefix: &[String], fields: &mut Vec<Field
             } else {
                 Kind::Raw
             };
-            let text = value
-                .as_str()
-                .map(String::from)
-                .or_else(|| value.as_bool().map(|value| value.to_string()))
-                .unwrap_or_else(|| value.to_string().trim().into());
-            append_extra(fields, path, text, kind);
+            let text = toml_display(value);
+            append_extra(fields, path, text, kind, paths);
         }
     }
 }
 
-fn append_extra(fields: &mut Vec<Field>, path: Vec<String>, text: String, kind: Kind) {
-    let template = fields.iter().find(|field| {
-        field.template
-            && field.path.len() == path.len()
-            && field.path.iter().zip(&path).all(|(expected, actual)| {
-                expected == actual || expected.starts_with('<') || expected == "*"
-            })
-    });
+fn append_extra(
+    fields: &mut Vec<Field>,
+    path: Vec<String>,
+    text: String,
+    kind: Kind,
+    paths: &FieldPaths,
+) {
+    let template = paths
+        .templates
+        .get(&path.len())
+        .into_iter()
+        .flatten()
+        .map(|&index| &fields[index])
+        .find(|field| {
+            field
+                .path
+                .iter()
+                .zip(&path)
+                .all(|(expected, actual)| catalog::segment_matches(expected, actual))
+        });
     let field = if let Some(template) = template {
         let mut field = template.clone();
         field.path = path;
@@ -507,17 +596,18 @@ fn append_extra(fields: &mut Vec<Field>, path: Vec<String>, text: String, kind: 
 struct SettingNode {
     field: Option<Field>,
     children: Vec<(String, SettingNode)>,
+    child_indexes: HashMap<String, usize>,
 }
 
 impl SettingNode {
     fn insert(&mut self, field: Field) {
         let mut node = self;
         for component in &field.path {
-            let index = node
-                .children
-                .iter()
-                .position(|(name, _)| name == component)
-                .unwrap_or_else(|| {
+            // 並び順はVecで保ち、構築中の同階層の検索には索引を使う。
+            let index = *node
+                .child_indexes
+                .entry(component.clone())
+                .or_insert_with(|| {
                     node.children.push((component.clone(), Self::default()));
                     node.children.len() - 1
                 });

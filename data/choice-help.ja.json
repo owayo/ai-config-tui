@@ -1,12 +1,12 @@
 {
-  "verified_at": "2026-11-01",
+  "verified_at": "2026-11-12",
   "claude": [
     {
       "keys": ["model"],
       "source": "https://code.claude.com/docs/en/model-config#model-aliases",
       "choices": [
         {"value": "default", "description": "モデル指定を解除し、アカウントの実行時の既定モデルを使います。モデルの名前ではありません。"},
-        {"value": "best", "description": "Fableを利用できる環境ではfableと同じモデル、それ以外ではopusと同じモデルを使います。"},
+        {"value": "best", "description": "opusと同じモデルを使います。"},
         {"value": "fable", "description": "特に難しい作業や長時間の作業向けのFableを使います。実際のモデルは接続先によって異なります。"},
         {"value": "sonnet", "description": "日常的なコーディング向けのSonnetを使います。接続先やCLIの版によって解決されるモデルが異なります。"},
         {"value": "opus", "description": "複雑な推論を伴う作業向けのOpusを使います。接続先やCLIの版によって解決されるモデルが異なります。"},
@@ -18,7 +18,7 @@
     },
     {
       "keys": ["permissions.defaultMode"],
-      "source": "https://code.claude.com/docs/en/settings-reference#permissionsdefaultmode",
+      "source": "https://code.claude.com/docs/en/settings-reference#permissions-defaultmode",
       "choices": [
         {"value": "default", "description": "読み取りは確認なしで実行し、それ以外は権限ルールに従って確認します。"},
         {"value": "acceptEdits", "description": "ファイル編集やmkdir・mvなどの一般的なファイル操作も確認なしで許可します。"},
@@ -85,7 +85,10 @@
       ]
     },
     {
-      "keys": ["model_reasoning_effort", "plan_mode_reasoning_effort"],
+      "keys": [
+        "model_reasoning_effort",
+        "plan_mode_reasoning_effort"
+      ],
       "source": "https://learn.chatgpt.com/docs/models#choose-a-model",
       "choices": [
         {"value": "low", "description": "推論への労力を低く設定します。深さより応答速度とトークン消費を優先します。対応レベルはモデルとクライアントによって異なります。"},
@@ -134,7 +137,7 @@
     },
     {
       "keys": ["history.persistence"],
-      "source": "https://learn.chatgpt.com/docs/config-file/config-reference#historypersistence",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "choices": [
         {"value": "save-all", "description": "会話履歴をhistory.jsonlへ保存します。保存容量の上限はhistory.max_bytesで指定できます。"},
         {"value": "none", "description": "会話履歴をhistory.jsonlへ保存しません。既存の履歴を削除する操作ではありません。"}
@@ -142,7 +145,7 @@
     },
     {
       "keys": ["tui.alternate_screen"],
-      "source": "https://learn.chatgpt.com/docs/config-file/config-reference#tuialternate_screen",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "choices": [
         {"value": "auto", "description": "代替画面の使用を自動で判断します。Zellijではスクロール履歴を残すため使用しません。"},
         {"value": "always", "description": "常に端末の代替画面を使います。"},
@@ -174,6 +177,14 @@
         {"value": "windsurf", "description": "出力中のファイル参照を、Windsurf用のURIスキームで開きます。"},
         {"value": "cursor", "description": "出力中のファイル参照を、Cursor用のURIスキームで開きます。"},
         {"value": "none", "description": "ファイル参照を開くためのエディター用URIスキームを指定しません。"}
+      ]
+    },
+    {
+      "keys": ["mcp_servers.<id>.startup_readiness"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "choices": [
+        {"value": "connection", "description": "MCPサーバーへの接続が完了した時点で起動準備ができたと判定します。未設定時の動作です。"},
+        {"value": "catalog", "description": "有効なキャッシュ済みツール一覧があれば、接続が完了する前でも起動準備ができたと判定します。ツールの呼び出しには接続が必要です。"}
       ]
     }
   ]

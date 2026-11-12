@@ -110,9 +110,10 @@ pub fn choice_help(provider: Provider, path: &[String], value: &Value) -> Option
         if !group.keys.iter().any(|key| {
             let parts = key.split('.').collect::<Vec<_>>();
             parts.len() == path.len()
-                && parts.iter().zip(path).all(|(part, actual)| {
-                    *part == actual || (part.starts_with('<') && part.ends_with('>'))
-                })
+                && parts
+                    .iter()
+                    .zip(path)
+                    .all(|(part, actual)| segment_matches(part, actual))
         }) {
             continue;
         }
@@ -125,6 +126,12 @@ pub fn choice_help(provider: Provider, path: &[String], value: &Value) -> Option
         }
     }
     None
+}
+
+pub fn segment_matches(pattern: &str, actual: &str) -> bool {
+    pattern == actual
+        || pattern == "*"
+        || (pattern.starts_with('<') && pattern.ends_with('>') && pattern != "<index>")
 }
 
 pub fn help(provider: Provider, key: &str) -> (String, String) {

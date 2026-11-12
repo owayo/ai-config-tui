@@ -19,7 +19,7 @@ SOURCES = {
     "claude-models": "https://code.claude.com/docs/en/model-config.md",
     "claude-output-styles": "https://code.claude.com/docs/en/output-styles.md",
     "codex-settings": "https://learn.chatgpt.com/docs/config-file/config-reference.md",
-    "codex-schema": "https://developers.openai.com/codex/config-schema.json",
+    "codex-schema": "https://learn.chatgpt.com/docs/config-schema.json",
     "codex-models": "https://learn.chatgpt.com/docs/models.md",
 }
 GENERIC_TYPES = {
@@ -55,7 +55,9 @@ def unique(values):
     """
     result = []
     for value in values:
-        if value not in result:
+        if not any(
+            type(value) is type(previous) and value == previous for previous in result
+        ):
             result.append(value)
     return result
 
@@ -71,7 +73,9 @@ def metadata(key, type_name, scope, source):
     kind = "string" if lower.startswith("string") else "raw"
     if lower in ("boolean", "bool") or lower.startswith("boolean;"):
         kind = "bool"
-    if "|" in lower and any(word in lower for word in ["array", "table", "object"]):
+    if re.search(r"\bor\b|\|", lower) and any(
+        word in lower for word in ["array", "table", "object"]
+    ):
         kind = "raw"
     initial = (
         "{}"
@@ -163,13 +167,16 @@ def claude_entries(text, models):
         type_match = re.search(r"^\* \*\*Type\*\*: (.+)", body, re.MULTILINE)
         scope = plain(scope_match[1]).split(".", 1)[0] if scope_match else "未記載"
         type_name = plain(type_match[1]) if type_match else "未記載"
+        # 配列の選択肢を解説する見出しは、保存できるオブジェクトのキーではない。
+        if re.match(r'the string ".*" in the .* array', type_name, re.IGNORECASE):
+            continue
         entry = metadata(
             key,
             type_name,
             scope,
             SOURCES["claude-settings"].removesuffix(".md")
             + "#"
-            + key.replace(".", "").lower(),
+            + key.replace(".", "-").lower(),
         )
         if type_match:
             end = re.search(
@@ -183,6 +190,7 @@ def claude_entries(text, models):
                 else type_match.end()
             ]
             if entry["kind"] == "string" or type_name.lower().startswith("the string"):
+                type_body = re.sub(r"(?:\bsuch as\b|\be\.g\.)[^\n]*", "", type_body)
                 entry["choices"] = unique(
                     json.loads(value)
                     for value in re.findall(r'`("(?:\\.|[^"\\])*")`', type_body)
@@ -263,11 +271,30 @@ def variants(node, schema, seen=()):
         name = node["$ref"].split("/")[-1]
         if name in seen:
             return [node]
-        return variants(schema["definitions"][name], schema, seen + (name,))
+        target = schema
+        for part in node["$ref"].split("/")[1:]:
+            target = target[part.replace("~1", "/").replace("~0", "~")]
+        resolved = variants(target, schema, seen + (name,))
+        siblings = {key: value for key, value in node.items() if key != "$ref"}
+        return [{**variant, **siblings} for variant in resolved]
     branches = node.get("allOf", node.get("anyOf", node.get("oneOf")))
     if branches:
+        siblings = {
+            key: value
+            for key, value in node.items()
+            if key not in ("allOf", "anyOf", "oneOf")
+        }
         return [
-            value for branch in branches for value in variants(branch, schema, seen)
+            {
+                **value,
+                **siblings,
+                "properties": {
+                    **value.get("properties", {}),
+                    **siblings.get("properties", {}),
+                },
+            }
+            for branch in branches
+            for value in variants(branch, schema, seen)
         ]
     return [node]
 
@@ -280,15 +307,15 @@ def schema_at(parts, schema):
 
     """
     nodes = [schema]
-    for part in parts:
+    for index, part in enumerate(parts):
         next_nodes = []
         for node in nodes:
             for variant in variants(node, schema):
                 properties = variant.get("properties", {})
                 if part in properties:
                     next_nodes.append(properties[part])
-                elif part.startswith("<") and isinstance(
-                    variant.get("additionalProperties"), dict
+                elif isinstance(variant.get("additionalProperties"), dict) and (
+                    part.startswith("<") or index + 1 < len(parts)
                 ):
                     next_nodes.append(variant["additionalProperties"])
                 elif (
@@ -302,19 +329,48 @@ def schema_at(parts, schema):
 
 
 def schema_paths(node, schema, prefix=(), seen=()):
-    """固定名のプロパティを列挙し、リファレンスの一覧を補う。
+    """動的な名前と配列要素もたどり、リファレンスの一覧を補う。
 
     Yields:
         tuple: プロパティのパスと対応するスキーマのノード。
 
     """
-    if len(prefix) > 6:
-        return
-    for variant in variants(node, schema, seen):
-        for key, value in variant.get("properties", {}).items():
-            parts = prefix + (key,)
-            yield parts, value
-            yield from schema_paths(value, schema, parts, seen)
+    if "$ref" in node:
+        reference = node["$ref"]
+        if reference in seen:
+            return
+        target = schema
+        for part in reference.split("/")[1:]:
+            target = target[part.replace("~1", "/").replace("~0", "~")]
+        yield from schema_paths(target, schema, prefix, seen + (reference,))
+        node = {key: value for key, value in node.items() if key != "$ref"}
+    for keyword in ("allOf", "anyOf", "oneOf"):
+        for branch in node.get(keyword, []):
+            yield from schema_paths(branch, schema, prefix, seen)
+    for key, value in node.get("properties", {}).items():
+        parts = prefix + (key,)
+        yield parts, value
+        yield from schema_paths(value, schema, parts, seen)
+    # 文字列マップの各値まで増やさず、名前の下に構造があるものだけ列挙する。
+    for keyword, placeholder in (
+        ("additionalProperties", "<name>"),
+        ("items", "<index>"),
+    ):
+        child = node.get(keyword)
+        if isinstance(child, dict):
+            yield from schema_paths(child, schema, prefix + (placeholder,), seen)
+
+
+def path_shape(key):
+    """資料ごとに異なる任意名の表記を照合用にそろえる。
+
+    Returns:
+        tuple: 任意名を同じ表記にしたパスの成分。
+
+    """
+    return tuple(
+        "<name>" if "<" in part or part == "*" else part for part in key.split(".")
+    )
 
 
 def codex_entries(text, schema, models):
@@ -336,6 +392,7 @@ def codex_entries(text, schema, models):
             SOURCES["codex-settings"].removesuffix(".md"),
         )
         for key, type_name in rows
+        if not re.search(r"\s*=", key)
     }
     descriptions = {
         key: json.loads('"' + description + '"')
@@ -346,14 +403,39 @@ def codex_entries(text, schema, models):
             section,
         )
     }
+    # 公式表の <id>・<tool> などを保ち、スキーマの <name> と二重登録しない。
+    documented_paths = {}
+    for key in entries:
+        parts = key.split(".")
+        for length in range(1, len(parts) + 1):
+            documented_paths.setdefault(
+                path_shape(".".join(parts[:length])), parts[:length]
+            )
     schema_nodes = {}
     for parts, node in schema_paths(schema, schema):
+        # 現行の名前付きレイヤーは別ファイル。旧 profiles 表の子は新設しない。
+        if parts[0] == "profiles" and len(parts) > 1:
+            continue
+        for length in range(len(parts), 0, -1):
+            documented = documented_paths.get(path_shape(".".join(parts[:length])))
+            if documented:
+                parts = tuple(documented) + parts[length:]
+                break
         key = ".".join(parts)
         schema_nodes[key] = node
         if key not in entries:
+            resolved_types = unique(
+                name
+                for variant in variants(node, schema)
+                for name in (
+                    variant["type"]
+                    if isinstance(variant.get("type"), list)
+                    else [variant.get("type", "table")]
+                )
+            )
             entries[key] = metadata(
                 key,
-                node.get("type", "table"),
+                " | ".join(resolved_types),
                 "User config.toml",
                 SOURCES["codex-schema"],
             )
@@ -379,7 +461,15 @@ def codex_entries(text, schema, models):
         )
         if entry["retired"]:
             entry["read_only"] = "公式リファレンスで廃止済みとされている設定です。"
-        types = {str(node.get("type", "")) for node in nodes}
+        types = {
+            name
+            for node in nodes
+            for name in (
+                node["type"]
+                if isinstance(node.get("type"), list)
+                else [node.get("type", "")]
+            )
+        }
         enum = unique(
             value
             for node in nodes
@@ -392,24 +482,36 @@ def codex_entries(text, schema, models):
             for token in tokens
             if re.fullmatch(r"[a-z][a-z0-9_.-]*", token) and token not in GENERIC_TYPES
         ]
-        if doc_enum:
+        # 表にはテーブルの方式名も並ぶ。文字列として保存できる候補と区別する。
+        if doc_enum and not (enum and types & {"object", "array"}):
             enum = doc_enum
         if doc_type in ("boolean", "bool") or types == {"boolean"}:
-            entry.update(kind="bool", choices=[True, False], custom=False)
+            entry.update(kind="bool", choices=enum or [True, False], custom=False)
         elif enum:
             entry["choices"] = enum
             if all(isinstance(value, str) for value in enum):
                 entry["kind"] = (
                     "string"
-                    if not (types & {"object", "array"}) and "{" not in doc_type
+                    if types <= {"string", ""} and "{" not in doc_type
                     else "raw"
                 )
-            entry["custom"] = bool(types & {"object", "array"}) or "{" in doc_type
+            entry["custom"] = (
+                bool(types & {"object", "array"})
+                or "{" in doc_type
+                or not doc_enum
+                and any("enum" not in node and "const" not in node for node in nodes)
+            )
         elif doc_type.startswith("string") or types == {"string"}:
             entry["kind"] = (
                 "raw"
-                if (types & {"object", "array"})
-                or ("|" in doc_type and "array" in doc_type)
+                if types - {"string", ""}
+                or (
+                    "|" in doc_type
+                    and any(
+                        name in doc_type
+                        for name in ("array", "boolean", "integer", "null")
+                    )
+                )
                 else "string"
             )
         elif "boolean" in types or doc_type.startswith("boolean |"):
