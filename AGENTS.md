@@ -27,7 +27,7 @@ ai-config-tui は、Claude Code (`settings.json`) と Codex (`config.toml`) の�
 | `src/profile.rs` | プロファイルの登録 (`profiles.toml`)、種類の判定、環境変数からの追加 |
 | `src/document.rs` | JSON / TOML の読み込み・編集・取り消し・書き出し |
 | `src/fields.rs` | 設定の項目の一覧 (カタログと実際のファイルのキーを合わせる)、表示用の値、検索 |
-| `src/catalog.rs` | `data/` の 3 つの JSON の読み込み |
+| `src/catalog.rs` | `data/` の 3 つの JSON の読み込みと、キーの正規表記の分割・整形 (`key_path`・`key_text`) |
 | `src/storage.rs` | 保存 (外部変更の検査、一時ファイルからの置き換え、バックアップの世代管理、Unix の権限) |
 | `src/editor.rs` | テキストの入力欄 |
 | `src/tests.rs` | 単体テスト (TUI の描画と操作を含む) |
@@ -36,6 +36,7 @@ ai-config-tui は、Claude Code (`settings.json`) と Codex (`config.toml`) の�
 | `data/settings-catalog.json` | 公式資料から `make catalog` が作る設定の一覧。手で書き換えない |
 | `data/settings-help.ja.json` | 設定の日本語名と説明。手で管理する |
 | `data/choice-help.ja.json` | 候補ごとの説明。グループごとに出典の URL を持ち、全体の確認日を `verified_at` に書く |
+| `data/confirmed-status.json` | 公式の設定表・スキーマの外 (更新履歴、公開版のソース、関連ページ) で確かめた廃止・非推奨。生成器が読み、根拠の URL と確認した版を持つ。手で管理する |
 | `scripts/update_catalog.py` | カタログの生成器 (`make catalog` が呼ぶ)。テストは `scripts/test_update_catalog.py` |
 
 ## テストとチェック
@@ -70,6 +71,10 @@ make fmt           # 整形 (ファイルを書き換える)
 - Codex のスキーマでは参照先の型と、`$ref`・`allOf` の隣のプロパティ・既定値も読む。任意名・配列要素・深い子項目をたどり、循環は参照経路で止める。`<index>` を名前付きテーブルと照合しない
 - 公式表の代入例 (`= []` など) をキーに含めない。テーブルで指定する方式名を文字列候補にしない。旧 `profiles` 表の子は展開せず、現行の名前付きレイヤーが別ファイルであることを記録する
 - JSON の未知の数値の精度と、TOML の行末コメントを保つ。表示用の値では TOML の外側の装飾を除く。ヘッダーの値は名前にかかわらずマスクし、公式定義が数値・真偽値の項目だけを実際の型との一致で除外する
+- キーは正規表記で書く。英数字・`_`・`-` だけの部品とテンプレート (`<id>`・`*`・`<Event>[]`) はそのまま、それ以外 (ドットや引用符を含む名前など) は JSON の文字列として引用する (例: `notice."hide_gpt-5.1-codex-max_migration_prompt"`)。カタログ・名前・候補説明のキーはテストがこの表記を確かめる。生成器の `format_key`・`split_key` と `src/catalog.rs` の `key_text`・`key_path` は同じ規則で、片方だけを変えない
+- 公式の設定表・スキーマに書かれていない廃止・非推奨は、根拠の URL・効力の始まる版・確認した版を付けて `data/confirmed-status.json` に書く。資料の本文や機能フラグの段階より優先し、資料から消えたキーは前回のカタログの定義を引き継ぐ。点検のたびに見直す
+- Codex の機能フラグの段階 (Removed・Deprecated) と旧名は、`scripts/update_catalog.py` の `CODEX_RELEASE` が指すコミットのソースから読む。点検のたびに対象の公開版のタグとコミットへ更新する。公式スキーマの `features` のキーを説明できないとき、資料の本文と段階が食い違うときは生成が止まるので、確かめてから版を上げるか `data/confirmed-status.json` に記録する
+- 一部の値だけに付いた注記 (「`friendly` と `pragmatic` はスタイルを選ばない」など) を、設定全体の廃止と扱わない
 - `data/settings-catalog.json` は `make catalog` で作り直す (通信が要る)。生成器を変えたら `make catalog-test` を通す
 
 ## リリース

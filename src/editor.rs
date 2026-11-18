@@ -28,24 +28,35 @@ impl Editor {
         self.lines.join("\n")
     }
     pub fn insert(&mut self, text: &str, multiline: bool) {
-        for character in text.replace("\r\n", "\n").chars() {
-            if character == '\n' && multiline {
+        // 端末の貼り付けでは改行がCRLFやCRだけで届くことがあるため、LFにそろえる。
+        let text = text.replace("\r\n", "\n").replace('\r', "\n");
+        for (index, line) in text.split('\n').enumerate() {
+            if index > 0 && multiline {
                 let offset = self.byte_offset();
                 let rest = self.lines[self.row].split_off(offset);
                 self.row += 1;
                 self.col = 0;
                 self.lines.insert(self.row, rest);
-            } else if character == '\t' {
-                self.insert("  ", multiline);
-            } else if !character.is_control() {
-                let offset = self.byte_offset();
-                self.lines[self.row].insert(offset, character);
-                self.col += 1;
             }
+            // 長い行を貼り付けても文字ごとに挿入位置を探し直さないよう、1行分をまとめて挿入する。
+            let line = line.replace('\t', "  ").replace(char::is_control, "");
+            let offset = self.byte_offset();
+            self.lines[self.row].insert_str(offset, &line);
+            self.col += line.chars().count();
         }
     }
 
     pub fn handle(&mut self, key: KeyEvent, multiline: bool) {
+        // WindowsではAltGrで入力した文字 ({ } [ ] @ \ | ~ など) がCtrl+Alt付きで届くため、
+        // ショートカットとして捨てずに文字の入力として扱う。
+        if let KeyCode::Char(character) = key.code
+            && key
+                .modifiers
+                .contains(KeyModifiers::CONTROL | KeyModifiers::ALT)
+        {
+            self.insert(&character.to_string(), multiline);
+            return;
+        }
         if key.modifiers.contains(KeyModifiers::CONTROL) {
             match key.code {
                 KeyCode::Char('a') => self.col = 0,

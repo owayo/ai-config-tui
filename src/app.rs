@@ -592,7 +592,12 @@ impl App {
                 });
             }
             if field.value.is_some() && selected == 0 {
-                let current = field.value.clone().unwrap_or_default();
+                // 秘密情報は一覧と同じく、表示を許可するまで伏せる。保持する値は変えない。
+                let current = if field.sensitive && !self.reveal {
+                    "[hidden]".into()
+                } else {
+                    field.value.clone().unwrap_or_default()
+                };
                 selected = options.len();
                 options.push(PickOption {
                     label: format!("現在の値: {current}（候補外）"),
@@ -634,7 +639,16 @@ impl App {
                 }
             }
         });
-        let text = if field.kind == Kind::Raw
+        // 構造化された値の入力欄は、現在の値の表記から始める。文字列の中身だけを出すと、
+        // 変えずに反映しても数値などに変わるか、構文の誤りになる。
+        let literal = self
+            .config()
+            .and_then(|config| config.parsed.as_ref())
+            .filter(|_| field.kind != Kind::String)
+            .and_then(|parsed| fields::string_literal(parsed, &field.path));
+        let text = if let Some(literal) = literal {
+            literal
+        } else if field.kind == Kind::Raw
             && field
                 .choices
                 .iter()

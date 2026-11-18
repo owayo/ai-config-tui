@@ -2,11 +2,11 @@
   "claude": {
     "advisorModel": {
       "label": "相談用モデル",
-      "description": "助言を求めるadvisorツールが使うモデル。"
+      "description": "Claudeがadvisorツールを呼んだときに答えるモデル。主モデルと同等以上の性能が必要で、未設定ならadvisorはオフです。"
     },
     "alwaysThinkingEnabled": {
       "label": "拡張思考",
-      "description": "対応モデルの拡張思考を切り替えます。"
+      "description": "falseにすると、全セッションで拡張思考をオフにします。既定でオンのためtrueは効果がなく、Opus 5.5など常に思考するモデルではfalseも効きません。"
     },
     "availableModels": {
       "label": "選択可能なモデル",
@@ -22,7 +22,7 @@
     },
     "effortLevel": {
       "label": "既定の推論レベル",
-      "description": "個別設定のないモデルに適用する推論レベル。"
+      "description": "保存済みのレベルがないモデルに使う推論レベル。ユーザー設定ではOpus 5・Fable 5.1以前のモデルにだけ効き、Opus 5.5とそれ以降に出たモデルは無視します。"
     },
     "enforceAvailableModels": {
       "label": "既定モデルの許可制限",
@@ -98,7 +98,7 @@
     },
     "autoMode": {
       "label": "自動権限判定のルール",
-      "description": "autoモードの判定に使う許可・禁止ルール。"
+      "description": "autoモードの判定に追加する許可・禁止のルール。各配列に\"$defaults\"を入れないと、組み込みのルールを置き換えることがあります。"
     },
     "autoMode.classifyAllShell": {
       "label": "全シェルコマンドを自動判定",
@@ -134,7 +134,7 @@
     },
     "permissions.blockReadsOutsideWorkingDirectories": {
       "label": "作業範囲外の読み込み禁止",
-      "description": "権限モードにかかわらず作業範囲外のファイルを読ませません。"
+      "description": "権限モードにかかわらず、Read・Grep・Glob・LSPによる作業ディレクトリ外の読み込みを拒否します。シェルコマンドは同じ方法では拒否しません。"
     },
     "permissions.disableBypassPermissionsMode": {
       "label": "権限確認の省略を禁止",
@@ -174,7 +174,7 @@
     },
     "sandbox.autoAllowBashIfSandboxed": {
       "label": "隔離したシェルを自動許可",
-      "description": "隔離済みのシェルコマンドの権限確認を省略します。"
+      "description": "trueにすると、サンドボックス内で動くシェルコマンドを権限確認なしで実行します。v2.1.324より前は、既定がtrueでした。"
     },
     "sandbox.bwrapPath": {
       "label": "bubblewrapの実行パス",
@@ -218,7 +218,7 @@
     },
     "sandbox.failIfUnavailable": {
       "label": "隔離できなければ起動を中止",
-      "description": "隔離に失敗した状態での実行を禁止します。"
+      "description": "sandbox.enabledがtrueでサンドボックスを起動できないとき、隔離なしで続けずに起動時にエラーで終了します。Anthropicがホストする環境では、警告を出して起動します。"
     },
     "sandbox.filesystem": {
       "label": "隔離内のファイル権限",
@@ -234,7 +234,7 @@
     },
     "sandbox.filesystem.allowWrite": {
       "label": "書き込みを追加許可",
-      "description": "隔離内で書き込みを許可するパス。"
+      "description": "隔離内で書き込みを許可するパス。LinuxとWSL2では、まだ存在しないパスを指定しても効きません。"
     },
     "sandbox.filesystem.denyRead": {
       "label": "読み込み禁止パス",
@@ -266,7 +266,7 @@
     },
     "sandbox.network.allowLocalBinding": {
       "label": "ローカルの待受けを許可",
-      "description": "隔離内のポート待受けやmacOSでのlocalhost接続を許可します。"
+      "description": "macOSで、隔離内のポート待受けとlocalhostへの接続を許可します。LinuxとWSL2では効果がありません。"
     },
     "sandbox.network.allowMachLookup": {
       "label": "macOSサービスの検索許可",
@@ -314,7 +314,7 @@
     },
     "autoCompactWindow": {
       "label": "会話の自動圧縮しきい値",
-      "description": "どの程度コンテキストを使った時点で圧縮するかを指定します。"
+      "description": "自動圧縮を始めるコンテキストの量を、100000から1000000のトークン数で指定します。未設定なら、モデルに合わせた値を使います。"
     },
     "autoMemoryDirectory": {
       "label": "自動メモリの保存先",
@@ -350,7 +350,7 @@
     },
     "plansDirectory": {
       "label": "計画ファイルの保存先",
-      "description": "planモードで作成する計画ファイルのディレクトリ。"
+      "description": "planモードの計画ファイルを保存するディレクトリ。プロジェクトルートからの相対パスで指定し、ルートの外を指すと~/.claude/plansに保存されます。"
     },
     "skillListingBudgetFraction": {
       "label": "スキル一覧のコンテキスト比率",
@@ -465,8 +465,8 @@
       "description": "入力欄の下に独自コマンドの出力を表示します。"
     },
     "subagentStatusLine": {
-      "label": "サブエージェントの状態表示",
-      "description": "サブエージェント一覧の行を独自コマンドで整形します。"
+      "label": "サブエージェントの状態表示（廃止）",
+      "description": "サブエージェント一覧の行を独自コマンドで整形していた設定です。"
     },
     "syntaxHighlightingDisabled": {
       "label": "構文色分けの無効化",
@@ -541,8 +541,8 @@
       "description": "作成者表記はattributionによる設定へ移行しています。"
     },
     "includeGitInstructions": {
-      "label": "Git操作の組み込み指示",
-      "description": "コミットとPRに関する標準の指示を会話へ追加します。"
+      "label": "Gitの組み込み指示と状態",
+      "description": "コミットとPRの標準の指示と、会話の開始時に読むgit statusのスナップショットをClaudeに渡します。falseで両方を外します。"
     },
     "prUrlTemplate": {
       "label": "PRリンクのURL形式",
@@ -550,7 +550,7 @@
     },
     "allowedHttpHookUrls": {
       "label": "HTTPフックの接続先制限",
-      "description": "HTTPフックが送信できるURL。"
+      "description": "HTTPフックが送信できるURLのパターン。管理者設定では組織が配布したフックを、どの設定ファイルでもそれ以外のフックを制限します。"
     },
     "allowManagedHooksOnly": {
       "label": "管理者のフックだけ実行",
@@ -562,7 +562,7 @@
     },
     "disableWorkflows": {
       "label": "ワークフローの利用禁止",
-      "description": "管理者設定で動的ワークフローを無効にします。"
+      "description": "trueで、この設定が及ぶ全員の動的ワークフローと同梱のワークフローコマンドを止めます。自分だけ切り替えるときはenableWorkflowsを使います。"
     },
     "enableWorkflows": {
       "label": "動的ワークフロー",
@@ -574,7 +574,7 @@
     },
     "httpHookAllowedEnvVars": {
       "label": "HTTPフック用の環境変数",
-      "description": "HTTPフックのヘッダーに使用できる環境変数。"
+      "description": "HTTPフックがヘッダーに入れられる環境変数を、フック自身のallowedEnvVarsとこの一覧の両方にあるものに絞ります。管理者設定では組織が配布したフックを、どの設定ファイルでもそれ以外のフックを制限します。"
     },
     "workflowKeywordTriggerEnabled": {
       "label": "キーワードでワークフロー開始",
@@ -598,11 +598,11 @@
     },
     "syncClaudeAiSkills": {
       "label": "アカウントのスキル同期",
-      "description": "claude.aiで有効なスキルを読み込みます。"
+      "description": "falseで、claude.aiアカウントで有効なスキルの取得と、同期済みのスキルの読み込みを止めます。trueは未指定と同じです。"
     },
     "syncClaudeAiPlugins": {
       "label": "アカウントのプラグイン同期",
-      "description": "claude.aiで有効なプラグインを読み込み・取得します。"
+      "description": "falseで、claude.aiアカウントで有効なプラグインの取得と、同期済みのプラグインの読み込みを止めます。trueは未指定と同じです。"
     },
     "allowedChannelPlugins": {
       "label": "許可するチャネルプラグイン",
@@ -734,7 +734,7 @@
     },
     "worktree.location": {
       "label": "リモートworktreeの配置先",
-      "description": "SSH先で作成するworktreeの場所。"
+      "description": "DesktopのSSHセッションが、リモートのマシンでworktreeを作るフォルダー。Desktopだけが読み、リモート側の~/.claude/settings.jsonに書きます。"
     },
     "worktree.sparsePaths": {
       "label": "worktreeの取得対象",
@@ -825,12 +825,12 @@
       "description": "ログイン画面が接続するゲートウェイのURL。"
     },
     "forceLoginOrgUUID": {
-      "label": "ログイン組織の制限",
-      "description": "claude.aiへのログイン先を組織IDで制限します。"
+      "label": "ログイン先の組織",
+      "description": "管理者設定では、claude.aiのログインを指定した組織のUUIDに限ります。ほかの設定ファイルでは組織を確かめず、UUIDが1つならその組織をログイン時に選んでおきます。"
     },
     "gatewayInternalNetworks": {
-      "label": "ゲートウェイの内部ネットワーク",
-      "description": "ログインで使用する内部ネットワーク範囲。"
+      "label": "ゲートウェイ用の公開IPv4範囲",
+      "description": "組織が内部で使う公開IPv4のCIDRブロック（4つまで）。/loginがこの範囲のゲートウェイにも接続できるようにし、無効な値があると新しいゲートウェイのログインをすべて拒否します。"
     },
     "gcpAuthRefresh": {
       "label": "Google Cloud認証の更新",
@@ -865,16 +865,20 @@
       "description": "Desktopのブラウザーの移動先をlocalhostに限定します。"
     },
     "disableMobileSimulatorTools": {
-      "label": "モバイルシミュレーターの利用禁止",
-      "description": "DesktopのiOSシミュレーター用ツールを禁止します。"
+      "label": "Claudeのシミュレーター操作禁止",
+      "description": "DesktopのiOSシミュレーター画面で、Claudeのツールを使えなくします。人は引き続き手で操作できます。"
+    },
+    "disableRemotePreviewScripts": {
+      "label": "SSH・WSLのプレビューのスクリプト禁止",
+      "description": "DesktopでSSH・WSLセッションのHTMLをプレビューするとき、スクリプトを実行しません。Claude Desktop 5.1231.0以降が読み、端末のCLIは無視します。"
     },
     "cleanupPeriodDays": {
       "label": "会話履歴の保存日数",
-      "description": "保存期間を過ぎた会話の記録を削除します。"
+      "description": "保存期間を過ぎた会話の記録を削除します。DesktopとCoworkで始めた・続けた会話は、既定では期間を過ぎても残ります。"
     },
     "desktopSessionCleanupPeriodDays": {
       "label": "Desktopの履歴保存日数",
-      "description": "DesktopとCoworkの会話記録の保存期間。"
+      "description": "DesktopとCoworkの会話記録を消すまでの日数。この日数とcleanupPeriodDaysの両方を過ぎた記録を消し、0は期限なしです。"
     },
     "feedbackDrafts": {
       "label": "フィードバックの下書き",
@@ -905,8 +909,8 @@
       "description": "SDKやIDEから渡された制限を管理設定で扱う方法。"
     },
     "policyHelper": {
-      "label": "管理ポリシー生成コマンド",
-      "description": "起動時に管理者設定を計算する外部プログラム。"
+      "label": "管理ポリシー生成の設定",
+      "description": "起動時に管理者設定を計算するプログラムの指定。path・timeoutMs・refreshIntervalMsを持つオブジェクトで、パスの文字列だけでは無効になります。"
     },
     "policyHelper.path": {
       "label": "ポリシー生成の実行ファイル",
@@ -930,7 +934,7 @@
     },
     "autoInstallIdeExtension": {
       "label": "IDE拡張の自動インストール",
-      "description": "VS Codeの端末でIDE拡張を自動導入します。"
+      "description": "外部の端末で/ideを実行したとき、起動中のVS Code・Cursor・Devin DesktopへIDE拡張をインストールします。claudeの起動時にはインストールしません。"
     },
     "claudeInChromeDefaultEnabled": {
       "label": "起動時のChrome連携",
@@ -1043,8 +1047,8 @@
       "description": "起動時に新しいバージョンを確認します。"
     },
     "instructions": {
-      "label": "システム指示",
-      "description": "モデルへ渡すシステムの指示。"
+      "label": "システム指示（予約済み）",
+      "description": "将来の利用のために予約された項目です。代わりにmodel_instructions_fileかAGENTS.mdを使います。"
     },
     "developer_instructions": {
       "label": "開発者指示",
@@ -1068,7 +1072,7 @@
     },
     "personality": {
       "label": "応答スタイル（非推奨）",
-      "description": "現行資料ではfriendlyとpragmaticによるスタイル選択は廃止されています。"
+      "description": "互換のために残る非推奨の設定です。friendlyとpragmaticはスタイルを選ばなくなり、noneはモデルへの指示から組み込みのPersonalityの節を外します。"
     },
     "service_tier": {
       "label": "サービス階層",
@@ -1171,8 +1175,8 @@
       "description": "MCPのOAuth認証で使うリダイレクト先。"
     },
     "experimental_use_unified_exec_tool": {
-      "label": "統合実行ツール（実験的）",
-      "description": "統合されたコマンド実行ツールの利用設定。"
+      "label": "統合コマンド実行（旧形式）",
+      "description": "統合コマンド実行を有効にする旧名です。代わりにfeatures.unified_execかcodex --enable unified_execを使います。"
     },
     "web_search": {
       "label": "Web検索の方式",
@@ -1347,12 +1351,12 @@
       "description": "配布元とプラグインIDごとの設定。"
     },
     "profile": {
-      "label": "選択する設定レイヤー",
-      "description": "読み込む名前付き設定レイヤー。"
+      "label": "設定レイヤーの選択（廃止）",
+      "description": "profilesの表から使う設定を選ぶ、config.tomlの最上位の旧形式の指定です。"
     },
     "profiles": {
-      "label": "旧形式の名前付き設定",
-      "description": "config.toml内の旧形式の名前付き設定です。現行の--profileでは別の<名前>.config.tomlを使います。同じ名前の旧テーブルがあると起動時にエラーになります。本ツールは別ファイルへの自動移行を行いません。"
+      "label": "旧形式の名前付き設定（廃止）",
+      "description": "config.tomlに書く旧形式の名前付き設定です。本ツールは別ファイルへの自動移行を行いません。"
     },
     "projects": {
       "label": "プロジェクトごとの設定",
@@ -1427,8 +1431,8 @@
       "description": "端末タイトルに使う項目。"
     },
     "tui.theme": {
-      "label": "端末の配色テーマ",
-      "description": "画面に適用する配色。"
+      "label": "構文ハイライトのテーマ",
+      "description": "構文ハイライトに使うテーマ名をケバブケースで指定します。指定すると明暗テーマの自動判定を上書きします。"
     },
     "tui.keymap": {
       "label": "キー割り当て",
@@ -1495,12 +1499,12 @@
       "description": "子シェルへ継承する環境変数の範囲。"
     },
     "shell_environment_policy.exclude": {
-      "label": "除外する環境変数",
-      "description": "継承する環境変数から除くパターン。"
+      "label": "除外する環境変数（旧形式）",
+      "description": "環境変数を除外する旧形式のパターン。新しい設定ではshell_environment_policy.filtersを使い、同じレイヤーで両方の形式を混ぜません。"
     },
     "shell_environment_policy.include_only": {
-      "label": "許可した環境変数だけ継承",
-      "description": "指定したパターンに一致する環境変数だけを継承します。"
+      "label": "許可した環境変数だけ継承（旧形式）",
+      "description": "環境変数のパターンを並べる旧形式の許可リスト。新しい設定ではshell_environment_policy.filtersを使い、同じレイヤーで両方の形式を混ぜません。"
     },
     "shell_environment_policy.set": {
       "label": "追加する環境変数",
@@ -1511,7 +1515,7 @@
       "description": "環境変数の既定の除外パターンを無視します。"
     },
     "features.multi_agent": {
-      "label": "複数エージェント機能",
+      "label": "複数エージェント機能（非推奨）",
       "description": "複数エージェントの機能フラグ。"
     },
     "features.multi_agent_v2": {
@@ -1567,8 +1571,8 @@
       "description": "目標を扱う機能フラグ。"
     },
     "features.personality": {
-      "label": "応答スタイルの機能",
-      "description": "応答スタイルの機能フラグ。"
+      "label": "応答スタイルの機能（廃止）",
+      "description": "廃止された機能フラグです。互換性のため受け付けますが、無視されます。"
     },
     "features.prevent_idle_sleep": {
       "label": "作業中のスリープ防止",
@@ -1595,12 +1599,12 @@
       "description": "スキルのスクリプト実行時に確認することを許可します。"
     },
     "auto_review.policy": {
-      "label": "自動レビューの追加方針",
-      "description": "guardianの指示に追加する承認審査の方針。"
+      "label": "自動レビューの方針",
+      "description": "既定の自動レビュー方針を置き換えるMarkdownの文。管理側のguardian_policy_configが優先し、空の値は無視されます。"
     },
     "auto_review.extra_policy": {
-      "label": "自動レビューの追加テンプレート",
-      "description": "Guardianテンプレートの追加方針欄へ挿入する文。"
+      "label": "自動レビューの追加方針（廃止）",
+      "description": "Guardianのテンプレートの追加方針欄へ挿入していた文です。"
     },
     "feedback.enabled": {
       "label": "フィードバック収集の有効化",
@@ -1663,8 +1667,8 @@
       "description": "指定したアプリの個別ツールを有効・無効にします。"
     },
     "mcp_servers.<id>.auth": {
-      "label": "MCPの保存済み認証を利用",
-      "description": "保存されているOAuth認証情報を使います。ログイン開始は別の操作です。"
+      "label": "MCPの認証方式",
+      "description": "HTTP方式のMCPサーバーで、設定済みのBearerトークンと認証ヘッダーの次に使う認証。既定のoauthは保存済みのOAuth認証情報を使い、chatgptは信頼済みのChatGPT公式の接続先で現在のセッションを使ってから保存済みのOAuthに切り替えます。"
     },
     "mcp_servers.<id>.command": {
       "label": "MCPの起動コマンド",
@@ -1775,8 +1779,8 @@
       "description": "この接続先の分かりやすい表示名。"
     },
     "model_providers.<id>.base_url": {
-      "label": "Vertex AIの接続先URL",
-      "description": "組み込みGCPプロバイダーの接続先を指定します。未指定ならプロジェクトIDとロケーションから組み立てます。"
+      "label": "プロバイダーの接続先",
+      "description": "モデルプロバイダーのAPIのベースURL。"
     },
     "model_providers.<id>.model_catalog_url": {
       "label": "プロバイダーのモデル一覧URL",
@@ -2021,6 +2025,582 @@
     "tui.presets.<digit>.label": {
       "label": "定型入力の名前",
       "description": "定型入力の選択画面とショートカットの案内に表示する名前です。省略できます。"
+    },
+    "windows.sandbox": {
+      "label": "Windowsのサンドボックス実装",
+      "description": "mxcを明示すると、MXCが使えないか管理要件で禁止されている場合に失敗します。フォールバック付きでMXCを自動選択するには、従来の方式とfeatures.prefer_mxcを組み合わせます。"
+    },
+    "browser_use.allow_history_access": {
+      "label": "ブラウザー履歴へのアクセス",
+      "description": "falseにするとブラウザーの履歴へのアクセスを制限します。管理要件でこの制限を強制できます。"
+    },
+    "browser_use.default_origin_policy": {
+      "label": "ブラウザーの既定のオリジン制限",
+      "description": "オリジンごとの指定がない場合のブラウザー制限。access・uploads・downloads・full_cdp_accessをそれぞれallowかdenyで指定します。"
+    },
+    "browser_use.origins.<origin>": {
+      "label": "オリジンごとのブラウザー制限",
+      "description": "default_origin_policyと同じ項目で指定するオリジン別の制限で、ローカルの値では管理側の拒否を緩められません。キーにはHTTPかHTTPSのスキームと任意のポートを含め、パス・クエリ・フラグメントは省きます。"
+    },
+    "computer_use.default_app_access": {
+      "label": "コンピューター操作の既定のアプリ許可",
+      "description": "アプリ別の指定がない場合の、ネイティブアプリへのアクセス方針。ローカルの設定では管理側の制限を緩められません。"
+    },
+    "computer_use.macos.bundle_ids": {
+      "label": "macOSアプリごとのアクセス許可",
+      "description": "バンドルIDをキーにした、macOSのネイティブアプリへのアクセス設定。"
+    },
+    "computer_use.windows.aumids": {
+      "label": "Windowsパッケージアプリのアクセス許可",
+      "description": "AUMID（Application User Model ID）をキーにした、パッケージ版Windowsアプリへのアクセス設定。"
+    },
+    "computer_use.windows.exes": {
+      "label": "Windows実行ファイルのアクセス規則",
+      "description": "Windowsの実行ファイルへのアクセス規則。各規則にpublisher_name・product_name・access（allowかdeny）が必要で、binary_nameは省略できます。"
+    },
+    "computer_use.windows.always_allowed_app_ids": {
+      "label": "確認なしで開けるWindowsアプリ",
+      "description": "コンピューター操作が確認なしで開けるWindowsアプリのID。一覧にないアプリは承認が必要で、保存済みの項目はChatGPTデスクトップアプリのComputer Useの設定から削除します。"
+    },
+    "skills.bundled.enabled": {
+      "label": "同梱スキルの読み込み",
+      "description": "Codexに同梱されたシステムスキルを読み込みます。既定はtrueで、信頼済みプロジェクトの設定でfalseにするとそのプロジェクトでは無効になります。"
+    },
+    "skills.include_instructions": {
+      "label": "スキルの自動指示の追加",
+      "description": "スキルに関する自動の指示をモデルのコンテキストに含めます。既定はtrueです。"
+    },
+    "skills.config": {
+      "label": "スキルごとの有効・無効",
+      "description": "名前かパスでスキルを有効・無効にする規則。複数の規則に一致したスキルには、最後の規則が適用されます。"
+    },
+    "skills.config.<index>.enabled": {
+      "label": "対象スキルの有効化",
+      "description": "この要素で指定したスキルを有効・無効にします。"
+    },
+    "apps.<id>.default_tools_approval_mode": {
+      "label": "アプリ別のツール承認方式",
+      "description": "ツールごとの指定がない場合に使う、このアプリのツールの承認方法。"
+    },
+    "apps.<id>.tools.<tool>.approval_mode": {
+      "label": "アプリの個別ツールの承認方式",
+      "description": "アプリの1つのツールに適用する承認方法の上書き。"
+    },
+    "tool_suggest.discoverables": {
+      "label": "提案を許可する追加ツール",
+      "description": "追加で見つけられるコネクターやプラグインについて、ツールの提案を許可します。各要素にtype（connectorかplugin）とidを指定します。"
+    },
+    "tool_suggest.disabled_tools": {
+      "label": "提案しないツール",
+      "description": "指定したコネクターやプラグインの提案を止めます。各要素にtype（connectorかplugin）とidを指定します。"
+    },
+    "features.code_mode.enabled": {
+      "label": "コードモードの有効化",
+      "description": "コードモードの機能設定を有効にします。開発中の機能で、既定では無効です。"
+    },
+    "features.code_mode.excluded_tool_namespaces": {
+      "label": "コードモードで除外するツール名前空間",
+      "description": "コードモードの入れ子のツール案内と、実行環境への公開から除くツールの名前空間。"
+    },
+    "features.code_mode.direct_only_tool_namespaces": {
+      "label": "直接呼び出しに限るツール名前空間",
+      "description": "コードモードで、直接のツール呼び出しでだけ使えるツールの名前空間。"
+    },
+    "features.context_management.experimental_mode": {
+      "label": "コンテキスト管理の実験モード",
+      "description": "コンテキスト管理の実験的な設定です。現在この機能は利用できません。"
+    },
+    "features.rollout_budget.enabled": {
+      "label": "ロールアウト予算の追跡",
+      "description": "ロールアウト予算の追跡を有効にする、開発中で既定は無効の機能。有効にする場合はlimit_tokensとreminder_at_remaining_tokensの両方を設定します。"
+    },
+    "features.rollout_budget.limit_tokens": {
+      "label": "ロールアウト予算のトークン上限",
+      "description": "ロールアウト予算の追跡に使う正のトークン上限。予算の追跡を有効にする場合は必須です。"
+    },
+    "features.rollout_budget.sampling_token_weight": {
+      "label": "サンプリングしたトークンの重み",
+      "description": "ロールアウト予算の集計で、サンプリングしたトークンに掛ける0以上の有限の倍率。既定は1.0です。"
+    },
+    "features.rollout_budget.prefill_token_weight": {
+      "label": "プリフィルのトークンの重み",
+      "description": "ロールアウト予算の集計で、プリフィルのトークンに掛ける0以上の有限の倍率。既定は1.0です。"
+    },
+    "hooks.<Event>": {
+      "label": "イベントごとのフック",
+      "description": "PreToolUse・PostToolUse・SessionStart・Stopなど、フックのイベントに対応するマッチャーのグループ。"
+    },
+    "hooks.<Event>[].hooks": {
+      "label": "マッチャーグループのハンドラー",
+      "description": "マッチャーグループで使うフックのハンドラー。コマンドとMCPツールのフックに対応し、promptとagentのハンドラーは解析だけして実行しません。"
+    },
+    "hooks.<Event>[].hooks[].async": {
+      "label": "フックのバックグラウンド実行",
+      "description": "きっかけの操作を待たせずに、コマンドフックをバックグラウンドで実行します。既定はfalseで、SessionEndは常に同期で実行します。"
+    },
+    "hooks.<Event>[].hooks[].additionalContextLimit": {
+      "label": "追加コンテキストのしきい値",
+      "description": "ハンドラーごとのおおよそのトークン数で、超えたadditionalContextはディスクに保存し、モデルには短いプレビューを渡します。既定は2500で、0なら全文をそのままモデルに渡します。"
+    },
+    "hooks.<Event>[].hooks[].commandWindows": {
+      "label": "Windows用のフックコマンド",
+      "description": "コマンドフックで、Windowsでだけ使うコマンド。TOMLではcommand_windowsとも書けます。"
+    },
+    "mcp_servers.<id>.env_vars": {
+      "label": "MCPへ引き継ぐ環境変数",
+      "description": "標準入出力のMCPサーバーへの引き継ぎを追加で許可する環境変数。文字列の要素はsourceがlocalになり、remoteは実行環境を使うリモートの標準入出力サーバーでだけ使います。"
+    },
+    "mcp_servers.<id>.cwd": {
+      "label": "MCPの作業ディレクトリ",
+      "description": "標準入出力のMCPサーバーを実行する作業ディレクトリ。"
+    },
+    "mcp_servers.<id>.bearer_token_env_var": {
+      "label": "MCPのBearerトークンの環境変数",
+      "description": "HTTP方式のMCPサーバーで使うBearerトークンを読み取る環境変数。"
+    },
+    "mcp_servers.<id>.http_headers": {
+      "label": "MCPに付ける固定ヘッダー",
+      "description": "MCPへのHTTPリクエストごとに付ける固定のHTTPヘッダー。"
+    },
+    "mcp_servers.<id>.http_headers_helper": {
+      "label": "MCPのヘッダー生成コマンド",
+      "description": "HTTPヘッダーの名前と値をJSONオブジェクトで出力するローカルのコマンド。ローカルで接続するHTTPのMCPサーバー専用で、明示したBearerトークンとOAuth認証情報は、このコマンドが出すAuthorizationヘッダーより優先されます。"
+    },
+    "mcp_servers.<id>.env_http_headers": {
+      "label": "MCPの環境変数からのヘッダー",
+      "description": "HTTP方式のMCPサーバーで、値を環境変数から取るHTTPヘッダー。"
+    },
+    "mcp_servers.<id>.required": {
+      "label": "MCPサーバーの起動必須",
+      "description": "有効にしたこのサーバーが、起動時に準備できていることを必須にします。startup_readinessがcatalogなら、有効なキャッシュ済みカタログでもこの条件を満たせます。"
+    },
+    "mcp_servers.<id>.startup_timeout_sec": {
+      "label": "MCPの起動待ち時間（秒）",
+      "description": "MCPサーバーの起動を待つ時間。既定の10秒を上書きします。"
+    },
+    "mcp_servers.<id>.startup_timeout_ms": {
+      "label": "MCPの起動待ち時間（ミリ秒）",
+      "description": "startup_timeout_secをミリ秒で指定する別名。"
+    },
+    "mcp_servers.<id>.tool_timeout_sec": {
+      "label": "MCPツールの待ち時間（秒）",
+      "description": "MCPサーバーのツールごとの待ち時間。既定の60秒を上書きします。"
+    },
+    "mcp_servers.<id>.enabled_tools": {
+      "label": "MCPの許可ツール",
+      "description": "このMCPサーバーが公開するツール名の許可リスト。"
+    },
+    "mcp_servers.<id>.disabled_tools": {
+      "label": "MCPの禁止ツール",
+      "description": "このMCPサーバーで、enabled_toolsの後に適用する禁止リスト。"
+    },
+    "mcp_servers.<id>.default_tools_approval_mode": {
+      "label": "MCPツールの既定の承認方式",
+      "description": "ツールごとの指定がない場合に使う、このサーバーのMCPツールの承認方法。"
+    },
+    "mcp_servers.<id>.tools.<tool>.approval_mode": {
+      "label": "MCPの個別ツールの承認方式",
+      "description": "このサーバーの1つのMCPツールに適用する承認方法の上書き。"
+    },
+    "mcp_servers.<id>.scopes": {
+      "label": "MCP OAuthの要求スコープ",
+      "description": "ログイン時に要求するOAuthスコープ。省略すると最初の認証チャレンジのスコープを使い、なければ保護リソースのメタデータに従います。"
+    },
+    "mcp_servers.<id>.oauth_resource": {
+      "label": "MCP OAuthのresource指定",
+      "description": "MCPのログイン時に含めるRFC 8707のOAuth resourceパラメーター。省略できます。"
+    },
+    "agents.max_threads": {
+      "label": "同時エージェント数の上限（旧名）",
+      "description": "agents.max_concurrent_threads_per_sessionの旧来の別名です。"
+    },
+    "memories.consolidation_service_tier": {
+      "label": "メモリ統合のサービス階層",
+      "description": "全体のメモリ統合に使うサービス階層。既定はdefault（Standard）です。"
+    },
+    "features.prefer_mxc": {
+      "label": "MXCの優先利用",
+      "description": "ネイティブの機能とポリシーが許せばWindowsのローカル実行でMXCを優先し、許さなければ設定済みの従来のサンドボックスを使います。単体のCLIでは既定で無効で、コマンドが失敗してもフォールバックしません。"
+    },
+    "features.view_image": {
+      "label": "画像表示ツール",
+      "description": "ローカルの画像を開く組み込みのview_imageツールを有効にします。既定はtrueです。"
+    },
+    "features.gateway_setup_wizard": {
+      "label": "ゲートウェイ設定の案内",
+      "description": "利用者がプロバイダーを選べる場合に、CLIのサインイン中に独自ゲートウェイの設定を提案します。既定はfalseです。"
+    },
+    "goals.max_goal_token_budget": {
+      "label": "目標のトークン予算の上限",
+      "description": "新しい目標の既定のトークン予算と、目標が要求できる予算の上限。省略すると、設定による上限はありません。"
+    },
+    "features.remote_plugin": {
+      "label": "リモートのプラグインカタログ",
+      "description": "リモートのプラグインカタログを有効にします。安定版の機能で、既定で有効です。"
+    },
+    "features.network_proxy.enabled": {
+      "label": "ネットワークプロキシの起動",
+      "description": "コマンドのネットワーク接続が有効なとき、隔離したコマンド用のプロキシを起動します。既定はfalseで、停止中は権限プロファイルのドメイン規則が適用されません。"
+    },
+    "features.network_proxy.domains": {
+      "label": "プロキシのドメイン規則",
+      "description": "隔離したネットワークのドメイン方針で、既定の未設定ではallowを足すまで外部に接続できません。完全一致のホスト・*.example.com（サブドメインのみ）・**.example.com（親ドメインも含む）・全体の*を指定でき、競合時はdenyが優先されます。"
+    },
+    "features.network_proxy.unix_sockets": {
+      "label": "プロキシのUnixソケット規則",
+      "description": "隔離したネットワークのUnixソケットの方針。既定は未設定で、許可するソケットをallowで追加します。"
+    },
+    "features.network_proxy.allow_local_binding": {
+      "label": "プロキシのローカル網への接続",
+      "description": "ローカルやプライベートネットワークへの広い接続を許可します。既定はfalseで、その場合もローカルIPの完全一致やlocalhostのallow規則で特定の宛先を許可できます。"
+    },
+    "features.network_proxy.enable_socks5": {
+      "label": "プロキシのSOCKS5対応",
+      "description": "SOCKS5を使えるようにします。既定はtrueです。"
+    },
+    "features.network_proxy.enable_socks5_udp": {
+      "label": "プロキシのSOCKS5 UDP許可",
+      "description": "SOCKS5経由のUDPを許可します。既定はtrueです。"
+    },
+    "features.network_proxy.allow_upstream_proxy": {
+      "label": "プロキシの上位プロキシ中継",
+      "description": "環境で指定された上位プロキシを経由することを許可します。既定はtrueです。"
+    },
+    "features.network_proxy.dangerously_allow_non_loopback_proxy": {
+      "label": "プロキシのループバック外の待受け",
+      "description": "ループバック以外のアドレスでの待受けを許可します。既定はfalseで、有効にするとプロキシの待受けがlocalhostの外に公開されることがあります。"
+    },
+    "features.network_proxy.dangerously_allow_all_unix_sockets": {
+      "label": "プロキシの全Unixソケット許可",
+      "description": "許可リストに限らず、任意のUnixソケットへの接続を許可します。既定はfalseで、厳しく管理された環境でだけ使います。"
+    },
+    "features.network_proxy.proxy_url": {
+      "label": "プロキシのHTTP待受けURL",
+      "description": "隔離したネットワークのHTTP待受けURL。既定はhttp://127.0.0.1:3128です。"
+    },
+    "features.network_proxy.socks_url": {
+      "label": "プロキシのSOCKS5待受けURL",
+      "description": "SOCKS5の待受けURL。既定はhttp://127.0.0.1:8081です。"
+    },
+    "features.web_search": {
+      "label": "Web検索の旧切り替え（非推奨）",
+      "description": "非推奨の旧来の切り替えです。最上位のweb_searchを使います。"
+    },
+    "features.web_search_cached": {
+      "label": "キャッシュWeb検索の旧切り替え（非推奨）",
+      "description": "非推奨の旧来の切り替えです。web_searchが未設定なら、trueはweb_searchのcachedとして扱われます。"
+    },
+    "features.web_search_request": {
+      "label": "ライブWeb検索の旧切り替え（非推奨）",
+      "description": "非推奨の旧来の切り替えです。web_searchが未設定なら、trueはweb_searchのliveとして扱われます。"
+    },
+    "features.shell_tool": {
+      "label": "コマンド実行ツール",
+      "description": "コマンドを実行するツールを有効にします。安定版の機能で、既定で有効です。"
+    },
+    "features.enable_request_compression": {
+      "label": "リクエスト本文の圧縮",
+      "description": "対応している場合に、ストリーミングのリクエスト本文をzstdで圧縮します。安定版の機能で、既定で有効です。"
+    },
+    "features.skill_mcp_dependency_install": {
+      "label": "スキルのMCP依存の導入",
+      "description": "スキルに必要なMCPの依存が足りないとき、確認とインストールを許可します。安定版の機能で、既定で有効です。"
+    },
+    "model_providers.<id>.gateway_oauth.device_authorization_url": {
+      "label": "ゲートウェイのデバイス認可URL",
+      "description": "SSH経由や、ブラウザーのない端末からゲートウェイにサインインするときのデバイス認可エンドポイント。省略できます。"
+    },
+    "model_providers.<id>.gateway_oauth.credential_export": {
+      "label": "ゲートウェイの認証情報コマンド",
+      "description": "コマンドをゲートウェイの認証情報の取得元にします。commandにはアクセストークンを1つ出力する実行ファイルを指定し、この表を使う場合はOAuthのクライアントIDとエンドポイントの設定を省きます。"
+    },
+    "model_providers.amazon-bedrock.aws.profile": {
+      "label": "BedrockのAWSプロファイル",
+      "description": "組み込みのamazon-bedrockプロバイダーが使うAWSのプロファイル名。"
+    },
+    "model_providers.amazon-bedrock.aws.region": {
+      "label": "BedrockのAWSリージョン",
+      "description": "組み込みのamazon-bedrockプロバイダーが使うAWSのリージョン。"
+    },
+    "shell_environment_policy.experimental_use_profile": {
+      "label": "シェルプロファイルの利用（実験的）",
+      "description": "サブプロセスを起動するときに、利用者のシェルのプロファイルを使います。"
+    },
+    "otel.log_sse_deltas": {
+      "label": "差分イベントのログ記録",
+      "description": "名前が.deltaで終わる、成功したサーバー送信イベントをログに記録します。既定はtrueで、falseにしてもエラー・完了イベント・メトリクスは記録されます。"
+    },
+    "otel.log_agent_responses": {
+      "label": "エージェント応答のログ送信",
+      "description": "メインエージェントとサブエージェントの最終応答の本文を、設定したOTLPのログ送信先に書き出します。既定はfalseで、本文は機密情報を含むことがあり、応答ごとに64KiBまでです。"
+    },
+    "otel.log_guardian_assessments": {
+      "label": "自動承認レビューのログ送信",
+      "description": "完了した自動承認レビューを、設定したOTLPのログ送信先に書き出します。既定はfalseで、判断の理由は機密情報を含むことがあり、1件64KiBまでです。"
+    },
+    "otel.tool_result.max_bytes": {
+      "label": "ログに含めるツール結果の上限",
+      "description": "切り詰めの通知の前に、ツール結果ごとにログへ含めるUTF-8の最大バイト数。既定は2048で、影響するのはログの出力だけです。"
+    },
+    "otel.exporter.<id>.endpoint": {
+      "label": "ログの送信先",
+      "description": "OTELのログの送信先エンドポイント。"
+    },
+    "otel.exporter.<id>.protocol": {
+      "label": "ログ送信のプロトコル",
+      "description": "OTLP/HTTPでのログ送信に使うプロトコル。"
+    },
+    "otel.exporter.<id>.headers": {
+      "label": "ログ送信のヘッダー",
+      "description": "OTELのログ送信リクエストに付ける固定のヘッダー。"
+    },
+    "otel.trace_exporter.<id>.endpoint": {
+      "label": "トレースの送信先",
+      "description": "OTELのトレースの送信先エンドポイント。"
+    },
+    "otel.trace_exporter.<id>.protocol": {
+      "label": "トレース送信のプロトコル",
+      "description": "OTLP/HTTPでのトレース送信に使うプロトコル。"
+    },
+    "otel.trace_exporter.<id>.headers": {
+      "label": "トレース送信のヘッダー",
+      "description": "OTELのトレース送信リクエストに付ける固定のヘッダー。"
+    },
+    "otel.exporter.<id>.tls.ca-certificate": {
+      "label": "ログ送信のCA証明書",
+      "description": "OTELのログ送信のTLSで使うCA証明書のパス。"
+    },
+    "otel.exporter.<id>.tls.client-certificate": {
+      "label": "ログ送信のクライアント証明書",
+      "description": "OTELのログ送信のTLSで使うクライアント証明書のパス。"
+    },
+    "otel.exporter.<id>.tls.client-private-key": {
+      "label": "ログ送信のクライアント秘密鍵",
+      "description": "OTELのログ送信のTLSで使うクライアント秘密鍵のパス。"
+    },
+    "otel.trace_exporter.<id>.tls.ca-certificate": {
+      "label": "トレース送信のCA証明書",
+      "description": "OTELのトレース送信のTLSで使うCA証明書のパス。"
+    },
+    "otel.trace_exporter.<id>.tls.client-certificate": {
+      "label": "トレース送信のクライアント証明書",
+      "description": "OTELのトレース送信のTLSで使うクライアント証明書のパス。"
+    },
+    "otel.trace_exporter.<id>.tls.client-private-key": {
+      "label": "トレース送信のクライアント秘密鍵",
+      "description": "OTELのトレース送信のTLSで使うクライアント秘密鍵のパス。"
+    },
+    "desktop.custom_file_handlers.<id>": {
+      "label": "独自のファイルハンドラー",
+      "description": "ChatGPTデスクトップアプリのOpen inに追加する開き先。利用者の設定でだけ指定できます。"
+    },
+    "desktop.custom_file_handlers.<id>.label": {
+      "label": "ファイルハンドラーの表示名",
+      "description": "Open inのメニューに表示する名前。必須です。"
+    },
+    "desktop.custom_file_handlers.<id>.icon": {
+      "label": "ファイルハンドラーのアイコン",
+      "description": "同梱アセットのパス・Base64のdata:image/...のURL・ファイルURI・ローカルの絶対パスのいずれかで指定するアイコン。必須で、対応しない指定では既定のVS Codeのアイコンになります。"
+    },
+    "desktop.custom_file_handlers.<id>.command": {
+      "label": "ファイルハンドラーのコマンド",
+      "description": "検出して起動する実行ファイルのパスかコマンド名。必須です。"
+    },
+    "desktop.custom_file_handlers.<id>.args": {
+      "label": "ファイルハンドラーの引数",
+      "description": "コマンドとファイルの入力の間に入れる引数。既定は空配列です。"
+    },
+    "desktop.custom_file_handlers.<id>.input": {
+      "label": "ファイルハンドラーへの渡し方",
+      "description": "アプリがハンドラーにファイルの入力を渡す方法。既定はpathです。"
+    },
+    "desktop.custom_file_handlers.<id>.supports_ssh": {
+      "label": "SSHの作業領域での利用",
+      "description": "SSHの作業領域にあるファイルでも、このハンドラーを候補に出します。既定はfalseです。"
+    },
+    "tui.collapse_turn_details": {
+      "label": "ターンの詳細の折りたたみ",
+      "description": "全画面の会話履歴で、ツール呼び出しを要約し、完了した処理を各プロンプトの下に折りたたみます。回答は表示されたままで、既定はfalseです。"
+    },
+    "marketplaces.<name>.source_type": {
+      "label": "マーケットプレイスの取得方式",
+      "description": "設定したプラグインのマーケットプレイスで、取得元の種類を指定します。マーケットプレイスはシステム・クラウド管理・利用者・信頼済みプロジェクトのconfig.tomlで定義できます。"
+    },
+    "plugins._default.enabled": {
+      "label": "プラグインの既定の有効状態",
+      "description": "インストール済みプラグインの既定の有効・無効。配布元が有効にするプラグインでは明示したplugins.<plugin>.enabledが優先され、表を省くと配布元かアカウントの有効化の設定を保ちます。"
+    },
+    "plugins.<plugin>.mcp_servers.<server>.default_tools_approval_mode": {
+      "label": "プラグインMCPの既定の承認方式",
+      "description": "プラグインが提供するMCPサーバーのツールに適用する、既定の承認方法。"
+    },
+    "plugins.<plugin>.mcp_servers.<server>.disabled_tools": {
+      "label": "プラグインMCPの禁止ツール",
+      "description": "プラグインが提供するMCPサーバーで、enabled_toolsの後に適用する禁止リスト。"
+    },
+    "plugins.<plugin>.mcp_servers.<server>.tools.<tool>.approval_mode": {
+      "label": "プラグインMCPの個別ツールの承認方式",
+      "description": "プラグインが提供するMCPツールごとの、承認方法の上書き。"
+    },
+    "tui.model_availability_nux.<model>": {
+      "label": "モデル案内の内部状態",
+      "description": "モデルのスラッグごとに保存する、起動時のヒントの内部状態。"
+    },
+    "tools.web_search": {
+      "label": "Web検索ツールの設定",
+      "description": "Web検索ツールの設定で、表の形式では検索のコンテキスト量・許可ドメイン・おおよその利用者の位置を指定できます。このドメインの指定はコマンドのネットワーク規則とは別で、コネクターやMCPサーバーは制限しません。"
+    },
+    "permissions.<name>.description": {
+      "label": "権限プロファイルの説明",
+      "description": "この名前付きプロファイルの説明文。extendsでは親の説明を引き継ぎません。"
+    },
+    "permissions.<name>.extends": {
+      "label": "継承する権限プロファイル",
+      "description": "このプロファイルより先に適用する親のプロファイルで、別の名前付きプロファイル・:read-only・:workspaceを指定できます。:danger-full-access・未定義の親・循環は受け付けません。"
+    },
+    "permissions.<name>.workspace_roots": {
+      "label": "プロファイルの作業ルート",
+      "description": "プロファイルで定義する作業ルート。セッションの実行時の作業ルートに加えて、:workspace_rootsのファイル規則が適用されます。"
+    },
+    "permissions.<name>.workspace_roots.<path>": {
+      "label": "作業ルートに加えるパス",
+      "description": "trueにすると、このパスをプロファイルの作業ルートに加えます。無効にした項目は使われません。"
+    },
+    "permissions.<name>.filesystem": {
+      "label": "プロファイルのファイル権限",
+      "description": "名前付きのファイル操作の権限プロファイル。各キーは絶対パスか、:minimalや:workspace_rootsなどの特別な指定です。"
+    },
+    "permissions.<name>.filesystem.glob_scan_max_depth": {
+      "label": "読み込み禁止globの展開の深さ",
+      "description": "サンドボックスの開始前に一致を記録する環境で、読み込み禁止のglobを展開する最大の深さ。指定する場合は1以上にします。"
+    },
+    "permissions.<name>.filesystem.<path-or-glob>": {
+      "label": "パスごとのファイル権限",
+      "description": "パス・globパターン・特別な指定に直接アクセス権を与えるか、その下に入れ子の項目をまとめます。denyは一致するパスの読み込みを禁止します。"
+    },
+    "permissions.<name>.filesystem.\":workspace_roots\".<subpath-or-glob>": {
+      "label": "作業ルート内のパスの権限",
+      "description": "有効な各作業ルートからの相対パスに対するファイル権限。ルート自体は.で表し、**/*.envのようなglobはdenyで読み込みを禁止できます。"
+    },
+    "permissions.<name>.network.enabled": {
+      "label": "プロファイルのネットワーク接続",
+      "description": "この権限プロファイルでコマンドのネットワーク接続を有効にしますが、プロキシは起動しません。features.network_proxyか管理者のネットワーク要件がなければ直接接続になり、プロファイルのドメイン規則は適用されません。"
+    },
+    "permissions.<name>.network.proxy_url": {
+      "label": "プロファイルのHTTP待受けURL",
+      "description": "この権限プロファイルで隔離したネットワークを有効にしたときの、HTTPの待受けURL。"
+    },
+    "permissions.<name>.network.enable_socks5": {
+      "label": "プロファイルのSOCKS5対応",
+      "description": "この権限プロファイルで隔離したネットワークを有効にしたとき、SOCKS5を使えるようにします。"
+    },
+    "permissions.<name>.network.socks_url": {
+      "label": "プロファイルのSOCKS5プロキシ",
+      "description": "この権限プロファイルが使うSOCKS5プロキシのエンドポイント。"
+    },
+    "permissions.<name>.network.enable_socks5_udp": {
+      "label": "プロファイルのSOCKS5 UDP許可",
+      "description": "SOCKS5の待受けでUDPを許可します。"
+    },
+    "permissions.<name>.network.allow_upstream_proxy": {
+      "label": "プロファイルの上位プロキシ中継",
+      "description": "隔離したネットワークで、別の上位プロキシを経由することを許可します。"
+    },
+    "permissions.<name>.network.dangerously_allow_non_loopback_proxy": {
+      "label": "プロファイルのループバック外の待受け",
+      "description": "隔離したネットワークの待受けに、ループバック以外のアドレスを許可します。有効にすると、待受けがlocalhostの外に公開されることがあります。"
+    },
+    "permissions.<name>.network.dangerously_allow_all_unix_sockets": {
+      "label": "プロファイルの全Unixソケット許可",
+      "description": "既定の制限された範囲に限らず、任意のUnixソケットへの接続を許可します。厳しく管理された環境でだけ使います。"
+    },
+    "permissions.<name>.network.mode": {
+      "label": "プロファイルのプロキシ方式",
+      "description": "サブプロセスの通信に使うネットワークプロキシの方式。"
+    },
+    "permissions.<name>.network.domains": {
+      "label": "プロファイルのドメイン規則",
+      "description": "隔離したコマンドのドメイン規則で、features.network_proxyか管理者のネットワーク要件でプロキシが動くときだけ適用されます。Web検索・アプリ・MCPサーバーは制限しません。"
+    },
+    "permissions.<name>.network.domains.<pattern>": {
+      "label": "ドメインごとの許可・禁止",
+      "description": "完全一致のホストか、*.example.comや**.example.comのような範囲付きのワイルドカードを許可・禁止します。"
+    },
+    "permissions.<name>.network.unix_sockets": {
+      "label": "プロファイルのUnixソケット規則",
+      "description": "隔離したネットワークのUnixソケット許可リストの上書き。キーにソケットのパスを書き、allowで追加し、denyで拒否します。"
+    },
+    "permissions.<name>.network.unix_sockets.<path>": {
+      "label": "Unixソケットごとの許可・禁止",
+      "description": "allowでUnixソケットの絶対パスを許可リストに加え、denyで拒否します。拒否した項目は許可リストから除かれます。"
+    },
+    "permissions.<name>.network.allow_local_binding": {
+      "label": "プロファイルのローカル網への接続",
+      "description": "隔離したネットワークを通じて、ローカルやプライベートネットワークへの広い接続を許可します。falseのままでも、ローカルIPの完全一致やlocalhostのallow規則で特定の宛先を許可できます。"
+    },
+    "projects.<path>.trust_level": {
+      "label": "プロジェクトの信頼レベル",
+      "description": "プロジェクトやワークツリーをtrustedかuntrustedにします。untrustedでは、プロジェクトの設定・フック・ルールを含む.codex/の層を読み込みません。"
+    },
+    "notice.hide_full_access_warning": {
+      "label": "フルアクセス警告の確認状態",
+      "description": "フルアクセスの警告を確認したかどうかの記録。"
+    },
+    "notice.hide_world_writable_warning": {
+      "label": "全員書き込み可の警告の確認状態",
+      "description": "誰でも書き込めるWindowsのディレクトリに関する警告を確認したかどうかの記録。"
+    },
+    "notice.hide_rate_limit_model_nudge": {
+      "label": "上限時のモデル切替案内の非表示",
+      "description": "利用上限によるモデル切り替えの案内を断ったかどうかの記録。"
+    },
+    "notice.hide_gpt5_1_migration_prompt": {
+      "label": "GPT-5.1の移行案内の確認状態",
+      "description": "GPT-5.1の移行案内を確認したかどうかの記録。"
+    },
+    "notice.\"hide_gpt-5.1-codex-max_migration_prompt\"": {
+      "label": "gpt-5.1-codex-maxの移行案内の確認状態",
+      "description": "gpt-5.1-codex-maxの移行案内を確認したかどうかの記録。"
+    },
+    "notice.model_migrations": {
+      "label": "確認済みのモデル移行",
+      "description": "確認したモデルの移行を、旧モデルから新モデルへの対応として記録します。"
+    },
+    "features.guardianv2.sync_elastic_budgeting": {
+      "label": "Guardian同期要求の伸縮配分",
+      "description": "同期のGuardianリクエストで、伸縮する割り当てを有効にします。既定はfalseです。"
+    },
+    "features.guardianv2.sync_elastic_sections": {
+      "label": "伸縮配分のセクション上限",
+      "description": "名前付きのセクションごとの上限。切り替えが有効なときに、Guardianが読み取って検証します。"
+    },
+    "features.guardianv2.sync_elastic_sections.<name>.max_total_section_tokens": {
+      "label": "セクションの割り当て上限",
+      "description": "このセクションへの割り当ての上限。省略すると、リクエスト全体の予算が上限になります。"
+    },
+    "model_providers.<id>.gateway_oauth.credential_export.args": {
+      "label": "認証情報コマンドの引数",
+      "description": "認証情報を書き出すコマンドへ渡す引数。"
+    },
+    "model_providers.<id>.gateway_oauth.credential_export.command": {
+      "label": "認証情報コマンドの実行ファイル",
+      "description": "シェルを通さずに直接起動する実行ファイル。"
+    },
+    "model_providers.<id>.gateway_oauth.credential_export.timeout_ms": {
+      "label": "認証情報コマンドの待ち時間",
+      "description": "認証情報を書き出すコマンドの終了を待つ最大時間。"
+    },
+    "tools.client_search_provider": {
+      "label": "検索の提供元の優先指定",
+      "description": "モデルが提供元を選ばない場合に、クライアントが優先する提供元。"
+    },
+    "tui.default_hosts": {
+      "label": "新しい会話の優先ホスト",
+      "description": "新しい会話で優先するホストを、プロジェクトとローカルの利用者ごとに保持します。利用者の設定からだけ読み込み、値は接続先や認証情報ではありません。"
+    },
+    "tui.sidebar_width_percent": {
+      "label": "サイドバーの幅（%）",
+      "description": "ドッキングしたサイドバーの幅を、端末に対する割合で指定します。既定は3分の1です。"
     }
   },
   "segments": {
@@ -2207,6 +2787,23 @@
     "<action>": "操作名",
     "<model>": "モデル名",
     "<index>": "配列の位置",
-    "*": "任意の項目"
+    "*": "任意の項目",
+    "change_host": "新しい会話の実行先の変更",
+    "close_sidebar_tab": "サイドバーのタブを閉じる",
+    "equalize_pane_widths": "表示中のペインの幅をそろえる",
+    "focus_main_composer": "メイン会話の入力欄にフォーカス",
+    "focus_pane_left": "親の会話にフォーカス",
+    "focus_pane_right": "開いているサイド会話にフォーカス",
+    "focus_sidebar_content": "サイド会話へのフォーカス・非表示",
+    "focus_sidebar_tabs": "サイドバーのタブ選択を開く",
+    "hide_pane": "フォーカス中のサイドバーペインを隠す",
+    "maximize_pane_width": "フォーカス中のペイン幅を最大化",
+    "minimize_pane_width": "フォーカス中のペイン幅を最小化",
+    "move_divider_left": "区切り線を左へ移動",
+    "move_divider_right": "区切り線を右へ移動",
+    "resize_panes": "区切り線をキーで動かすモード",
+    "sidebar_down": "次のサイドバータブへ",
+    "sidebar_up": "前のサイドバータブへ",
+    "toggle_pane_zoom": "フォーカス中のペインの拡大・復元"
   }
 }

@@ -1,5 +1,5 @@
 {
-  "verified_at": "2026-11-12",
+  "verified_at": "2026-11-18",
   "claude": [
     {
       "keys": ["model"],
@@ -61,6 +61,34 @@
         {"value": "dark-ansi", "description": "端末のANSIカラーパレットだけを使う暗いテーマです。"},
         {"value": "light-ansi", "description": "端末のANSIカラーパレットだけを使う明るいテーマです。"}
       ]
+    },
+    {
+      "keys": ["sandbox.autoAllowBashIfSandboxed"],
+      "source": "https://code.claude.com/docs/en/settings-reference#sandbox-autoallowbashifsandboxed",
+      "choices": [
+        {"value": true, "description": "サンドボックス内で動くシェルコマンドを、権限確認なしで実行します。denyルールと、Bash(git push *)のように内容を指定したaskルールは引き続き適用されます。"},
+        {"value": false, "description": "サンドボックス内のコマンドも通常の権限確認を通り、許可ルールと権限モードで実行が決まります。v2.1.324以降の既定値です。"}
+      ]
+    },
+    {
+      "keys": ["advisorModel"],
+      "source": "https://code.claude.com/docs/en/settings-reference#advisormodel",
+      "choices": [
+        {"value": "fable", "description": "Claude Codeが既定とする版のFableをadvisorに使います。Fableへのアクセスが必要です。"},
+        {"value": "opus", "description": "Claude Codeが既定とする版のOpusをadvisorに使います。"},
+        {"value": "sonnet", "description": "Claude Codeが既定とする版のSonnetをadvisorに使います。"}
+      ]
+    },
+    {
+      "keys": ["maxEffortLevel"],
+      "source": "https://code.claude.com/docs/en/settings-reference#maxeffortlevel",
+      "choices": [
+        {"value": "low", "description": "lowを上限にします。より高いレベルを指定しても、lowで動きます。"},
+        {"value": "medium", "description": "mediumを上限にします。より高いレベルを指定しても、mediumで動きます。"},
+        {"value": "high", "description": "highを上限にします。より高いレベルを指定しても、highで動きます。"},
+        {"value": "xhigh", "description": "xhighを上限にします。より高いレベルを指定しても、xhighで動きます。"},
+        {"value": "max", "description": "この設定では上限を設けません。"}
+      ]
     }
   ],
   "codex": [
@@ -71,15 +99,20 @@
         {"value": "disabled", "description": "CodexのWeb検索ツールを無効にします。シェルコマンドなどの通信可否は別の設定です。"},
         {"value": "cached", "description": "OpenAIが管理する索引に保存済みの検索結果を使います。任意のページをその場で取得するliveとは異なり、最新の状態とは限りません。"},
         {"value": "indexed", "description": "検索索引を通じて許可される場合にだけ外部Webへアクセスします。cachedの保存済み結果だけを使う動作とは区別されます。"},
-        {"value": "live", "description": "Webから最新の情報を取得します。ニュースや直近の変更など、新しい情報が必要な調査向けです。"}
+        {"value": "live", "description": "Webから最新の情報を取得します。CLIでは、--searchを付けると1回の実行だけliveにできます。"}
       ]
     },
     {
-      "keys": ["model"],
+      "keys": [
+        "model",
+        "review_model"
+      ],
       "source": "https://learn.chatgpt.com/docs/models#recommended-models",
       "choices": [
+        {"value": "gpt-6.2-astra", "description": "コード・アプリ・調査にまたがる難度の高い作業向けです。Codexでは、複数のサービスにまたがる不具合を追跡し、修正してテストする作業に使えます。"},
+        {"value": "gpt-6.2-sol", "description": "日常的なコーディング、文章作成、複数の資料にまたがる作業向けです。標準の速度では、トークンあたりのクレジット消費がGPT-6.2 Astraより少なくなります。"},
         {"value": "gpt-6-astra", "description": "複雑なコード・アプリ・調査など、特に高度な推論や判断が必要な作業向けです。"},
-        {"value": "gpt-6.1-sol", "description": "Astraに近い性能をより低い費用で使うモデルです。複雑な作業を繰り返す用途や長時間の作業向けです。"},
+        {"value": "gpt-6.1-sol", "description": "GPT-6 Astraに近い性能をより低い費用で使うモデルです。複雑な作業を繰り返す用途や長時間の作業向けです。"},
         {"value": "gpt-6.1-terra", "description": "文章作成、画像の理解、コンピューター操作を高速かつ効率的に行うモデルです。"},
         {"value": "gpt-6-luna", "description": "要約・抽出・範囲の限られたコーディングなど、対象を絞った大量の処理向けです。"}
       ]
@@ -140,7 +173,7 @@
       "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "choices": [
         {"value": "save-all", "description": "会話履歴をhistory.jsonlへ保存します。保存容量の上限はhistory.max_bytesで指定できます。"},
-        {"value": "none", "description": "会話履歴をhistory.jsonlへ保存しません。既存の履歴を削除する操作ではありません。"}
+        {"value": "none", "description": "会話履歴をhistory.jsonlへ保存しません。"}
       ]
     },
     {
@@ -185,6 +218,40 @@
       "choices": [
         {"value": "connection", "description": "MCPサーバーへの接続が完了した時点で起動準備ができたと判定します。未設定時の動作です。"},
         {"value": "catalog", "description": "有効なキャッシュ済みツール一覧があれば、接続が完了する前でも起動準備ができたと判定します。ツールの呼び出しには接続が必要です。"}
+      ]
+    },
+    {
+      "keys": ["permissions.<name>.filesystem.<path-or-glob>"],
+      "source": "https://learn.chatgpt.com/docs/permissions#filesystem-permissions",
+      "choices": [
+        {"value": "read", "description": "このパス以下で、コマンドにファイルの読み取りとディレクトリの一覧表示を許可します。ファイルの作成・変更・名前の変更・削除はできません。"},
+        {"value": "write", "description": "このパス以下で、コマンドにファイルの読み取りと変更を許可します。OSが許す範囲で、作成・名前の変更・削除もできます。"},
+        {"value": "deny", "description": "このパス以下での読み取りと書き込みを拒否します。広く許可した範囲から一部のパスを除くときに使います。同じパスに指定が重なると、writeやreadより優先されます。"}
+      ]
+    },
+    {
+      "keys": ["permissions.<name>.filesystem.\":workspace_roots\".<subpath-or-glob>"],
+      "source": "https://learn.chatgpt.com/docs/permissions#filesystem-permissions",
+      "choices": [
+        {"value": "read", "description": "各ワークスペースルートのこのサブパス以下で、コマンドにファイルの読み取りとディレクトリの一覧表示を許可します。ファイルの作成・変更・名前の変更・削除はできません。"},
+        {"value": "write", "description": "各ワークスペースルートのこのサブパス以下で、コマンドにファイルの読み取りと変更を許可します。OSが許す範囲で、作成・名前の変更・削除もできます。"},
+        {"value": "deny", "description": "各ワークスペースルートのこのサブパス以下での読み取りと書き込みを拒否します。「**/*.env」のようなglobを指定すると、一致するファイルの読み取りを拒否できます。"}
+      ]
+    },
+    {
+      "keys": ["tui.notification_method"],
+      "source": "https://learn.chatgpt.com/docs/config-file/config-advanced#tui-options",
+      "choices": [
+        {"value": "auto", "description": "端末が対応していると判断できればOSC 9の通知を使い、そうでなければBEL（\\x07）で知らせます。既定値です。"},
+        {"value": "osc9", "description": "OSC 9の通知を使います。OSC 9は端末のエスケープシーケンスで、デスクトップ通知として表示する端末があります。"},
+        {"value": "bel", "description": "BEL（\\x07）で通知します。"}
+      ]
+    },
+    {
+      "keys": ["tui.notification_method"],
+      "source": "https://github.com/openai/codex/releases/tag/rust-v0.168.0",
+      "choices": [
+        {"value": "osc777", "description": "OSC 777の方式で端末に通知します。Codex 0.168.0で追加された値です。"}
       ]
     }
   ]

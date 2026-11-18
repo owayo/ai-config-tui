@@ -11,7 +11,7 @@ use similar::{ChangeTag, TextDiff};
 
 use crate::{
     app::{Action, App, Focus, Loaded, Modal},
-    catalog::CATALOG,
+    catalog::{CATALOG, key_text},
     editor::Editor,
     fields::{Field, Kind},
     profile::{Provider, expand_path},
@@ -291,6 +291,19 @@ fn content(frame: &mut Frame, app: &mut App, area: Rect) {
                     .fg(setting_color(&field, TEXT))
                     .add_modifier(Modifier::BOLD),
             )));
+            // 設定表の外で確かめた状態は、理由と出典を設定の説明とは別に示す。
+            if let Some(reason) = &field.status_reason {
+                detail.push(Line::from(Span::styled(
+                    safe(reason),
+                    Style::default().fg(setting_color(&field, TEXT)),
+                )));
+            }
+            if let Some(source) = &field.status_source {
+                detail.push(Line::from(Span::styled(
+                    format!("状態の出典: {}", safe(source)),
+                    Style::default().fg(MUTED),
+                )));
+            }
         }
         detail.push(Line::from(Span::styled(
             safe(&field.description),
@@ -632,7 +645,7 @@ fn modal(frame: &mut Frame, app: &mut App) {
                 Action::Reset(path) => {
                     lines.push(Line::from(format!(
                         "{} をファイルから削除し、未設定に戻します。",
-                        safe(&path.join("."))
+                        safe(&key_text(path))
                     )));
                     lines.push(Line::from("変更は保存するまでファイルに書き込みません。"));
                 }

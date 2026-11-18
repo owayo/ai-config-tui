@@ -1,0 +1,48 @@
+{
+  "description": "公式の設定表・スキーマの外 (更新履歴、公開版のソース、関連ページ) で確かめた廃止・非推奨の状態。scripts/update_catalog.py が資料の本文や機能フラグの段階より優先して付ける。点検のたびに見直す。",
+  "claude": {
+    "subagentStatusLine": {
+      "status": "retired",
+      "reason": "Claude Code 2.1.323で削除されました。サブエージェントの行は常に既定の表示になり、このキーが残っていても設定ファイルは読み込まれます。",
+      "evidence": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21323",
+      "effective_since": "2.1.323",
+      "verified_in": "2.1.327"
+    }
+  },
+  "codex": {
+    "auto_review.extra_policy": {
+      "status": "retired",
+      "reason": "Codex 0.169.0で設定から削除され、指定しても無視されます（警告が出ます）。追加の規則は、管理者のrequirements.tomlのguardian_extra_policyで指定します。",
+      "evidence": "https://github.com/openai/codex/pull/60646",
+      "effective_since": "0.169.0",
+      "verified_in": "0.169.1"
+    },
+    "auto_review.experimental_policy_template": {
+      "status": "retired",
+      "reason": "Codex 0.169.0で設定から削除され、指定しても無視されます（警告が出ます）。",
+      "evidence": "https://github.com/openai/codex/pull/60646",
+      "effective_since": "0.169.0",
+      "verified_in": "0.169.1"
+    },
+    "profile": {
+      "status": "retired",
+      "reason": "Codex 0.134.0以降は対応していません。書かれていると、--profileの有無にかかわらず起動時にエラーになります。--profile <名前>と<名前>.config.tomlを使います。",
+      "evidence": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles",
+      "see_also": [
+        "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/core/src/config/mod.rs#L3547-L3554"
+      ],
+      "effective_since": "0.134.0",
+      "verified_in": "0.169.1"
+    },
+    "profiles": {
+      "status": "retired",
+      "reason": "Codex 0.134.0以降は読み込まれません。--profileで同じ名前を指定すると起動時にエラーになります。設定は<名前>.config.tomlへ移します。",
+      "evidence": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles",
+      "see_also": [
+        "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/config/src/loader/mod.rs#L306-L327"
+      ],
+      "effective_since": "0.134.0",
+      "verified_in": "0.169.1"
+    }
+  }
+}

@@ -40,21 +40,32 @@ pub struct Field {
     pub tree_prefix: String,
     pub retired: bool,
     pub deprecated: bool,
+    /// 同梱カタログの状態の理由と出典。一覧を作るたびに複製しないよう参照で持つ。
+    pub status_reason: Option<&'static str>,
+    pub status_source: Option<&'static str>,
     pub sensitive: bool,
 }
 
 impl Field {
+    /// 表示・検索・名前の辞書の参照に使う正規表記のキー。編集には `path` を使う。
     pub fn key(&self) -> String {
-        self.path.join(".")
+        catalog::key_text(&self.path)
     }
     pub fn display_value(&self) -> String {
         self.value.as_deref().unwrap_or("未設定").replace('\n', " ")
     }
     pub fn matches_query(&self, query: &str) -> bool {
-        query.is_empty()
-            || format!("{} {} {}", self.key(), self.label, self.description)
-                .to_lowercase()
-                .contains(&query.to_lowercase())
+        if query.is_empty() {
+            return true;
+        }
+        let key = self.key();
+        let mut text = format!("{key} {} {}", self.label, self.description);
+        // 引用符を付けずにドットでつないだ表記でも見つける。
+        if key.contains('"') {
+            text.push(' ');
+            text.push_str(&self.path.join("."));
+        }
+        text.to_lowercase().contains(&query.to_lowercase())
     }
     pub fn warning_label(&self) -> Option<&'static str> {
         if self.retired {
@@ -263,7 +274,13 @@ pub fn fields(config: &Config) -> Vec<Field> {
         field.initial = entry.initial.clone();
         field.retired = entry.retired;
         field.deprecated = entry.deprecated;
-        field.template = entry.key.contains(['<', '*']);
+        field.status_reason = entry.status_reason.as_deref();
+        field.status_source = entry.status_source.as_deref();
+        // 引用された部品は具体名なので、テンプレートの判定は分けた部品で行う。
+        field.template = field
+            .path
+            .iter()
+            .any(|part| catalog::is_template_part(part));
     }
     if let Some(parsed) = &config.parsed {
         for field in &mut fields {
@@ -273,7 +290,10 @@ pub fn fields(config: &Config) -> Vec<Field> {
                     .path
                     .iter()
                     .try_fold(root.as_item(), |item, key| item.get(key));
-                if field.choices.is_empty() && item.is_some_and(toml_edit::Item::is_table) {
+                // テーブルの配列もテーブルと同じく全体編集にし、インラインの配列に書き直さない。
+                if field.choices.is_empty()
+                    && item.is_some_and(|item| item.is_table() || item.is_array_of_tables())
+                {
                     field.kind = Kind::Document;
                 }
             }
@@ -380,7 +400,7 @@ fn sensitive_path(path: &[String]) -> bool {
 
 fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &str) -> Field {
     Field {
-        path: key.split('.').map(String::from).collect(),
+        path: catalog::key_path(key),
         label: label.into(),
         description: description.into(),
         kind: kind.clone(),
@@ -399,6 +419,8 @@ fn preset(key: &str, label: &str, description: &str, kind: Kind, suggestions: &s
         tree_prefix: String::new(),
         retired: false,
         deprecated: false,
+        status_reason: None,
+        status_source: None,
         sensitive: false,
     }
 }
@@ -428,6 +450,8 @@ fn extra(path: Vec<String>, value: String, kind: Kind) -> Field {
         tree_prefix: String::new(),
         retired: false,
         deprecated: false,
+        status_reason: None,
+        status_source: None,
         sensitive: false,
     }
 }
@@ -450,6 +474,28 @@ fn get_value(parsed: &Parsed, path: &[String]) -> Option<String> {
                 item = item.get(key)?;
             }
             Some(toml_display(item))
+        }
+    }
+}
+
+/// 現在の値が文字列なら、構造化された値の入力欄に出す表記を返す。`get_value` は文字列の
+/// 中身だけを返すため、JSON は引用符付きの文字列、TOML は外側の装飾を除いた元の表記にする。
+pub fn string_literal(parsed: &Parsed, path: &[String]) -> Option<String> {
+    match parsed {
+        Parsed::Json(root) => path
+            .iter()
+            .try_fold(root, |item, key| item.get(key))
+            .filter(|value| value.is_string())
+            .and_then(|value| serde_json::to_string(value).ok()),
+        Parsed::Toml(root) => {
+            let mut value = path
+                .iter()
+                .try_fold(root.as_item(), |item, key| item.get(key))?
+                .as_value()
+                .filter(|value| value.is_str())?
+                .clone();
+            value.decor_mut().clear();
+            Some(value.to_string())
         }
     }
 }
@@ -585,6 +631,10 @@ fn append_extra(
         field.path = path;
         field.value = Some(text);
         field.template = false;
+        // 実際の値がテーブルやテーブルの配列なら、テンプレートの型より優先して全体編集にする。
+        if kind == Kind::Document && field.choices.is_empty() {
+            field.kind = Kind::Document;
+        }
         field
     } else {
         extra(path, text, kind)
@@ -657,7 +707,7 @@ fn flatten_tree(
         let last = index + 1 == count;
         let root = path.len() == 1;
         let mut field = node.field.unwrap_or_else(|| {
-            let key = path.join(".");
+            let key = catalog::key_text(path);
             let (label, _) = catalog::help(provider, &key);
             let mut group = preset(
                 &key,

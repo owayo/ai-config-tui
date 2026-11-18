@@ -1,21 +1,25 @@
 {
   "schema_version": 1,
-  "verified_at": "2026-11-12",
+  "verified_at": "2026-11-18",
   "sources": {
     "claude-settings": "https://code.claude.com/docs/en/settings-reference.md",
     "claude-models": "https://code.claude.com/docs/en/model-config.md",
     "claude-output-styles": "https://code.claude.com/docs/en/output-styles.md",
     "codex-settings": "https://learn.chatgpt.com/docs/config-file/config-reference.md",
     "codex-schema": "https://learn.chatgpt.com/docs/config-schema.json",
-    "codex-models": "https://learn.chatgpt.com/docs/models.md"
+    "codex-models": "https://learn.chatgpt.com/docs/models.md",
+    "codex-features": "https://raw.githubusercontent.com/openai/codex/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs",
+    "codex-feature-aliases": "https://raw.githubusercontent.com/openai/codex/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/legacy.rs"
   },
   "source_sha256": {
-    "claude-settings": "7f0be22ed906e5c3d3df18c791b8716d87f6702a59754b711f98fdb84e2ec2c2",
-    "claude-models": "37edc7e03c00d7511a1b2d85d9208961223364166b10368e37e28118885f5bd4",
+    "claude-settings": "7b7b9dde44e60d9bea9d2072202e4e452cb3a34cd9adf9adbda6af4f838effbe",
+    "claude-models": "b4cc879cbdc3ab9f3a47038ea377b2688534bfde8c44a0dcc9d1d851d938a8d2",
     "claude-output-styles": "74bc7dfd0e61dc4a2cd5ffaca349f40702b49c33f9fba7cb4334b1d623a1bda1",
-    "codex-settings": "f6bef51b85be81c6e02e93eee3d98fa7ba78785d2c858187ee45c3ec0b65128b",
-    "codex-schema": "a0b58ffadb99ef7fb11843fef32858c1677ac17d75f08b822810e879e2407b27",
-    "codex-models": "0a99a1a6e54f0a0b2e2d7409873b88308e9ccee0414a60d746452af4989bf34e"
+    "codex-settings": "5dc519915a3c5253e046d1fb9e365a7c588872f1b26f973e656b2961b5242be4",
+    "codex-schema": "f515f420927460250181097af8dc72b80a6be4f01f4324a0efef816e46cc9c86",
+    "codex-models": "56dc4b791e918727a0ad69386c2781e7f530ccf083766f8e14ac368abf7fec23",
+    "codex-features": "d2d099a2aad69991fb002d34bf2dbb21124123dee98c7f328328ad72a21de151",
+    "codex-feature-aliases": "5899d34d8335ccaa45d8f34d9ed3d54e80e7c518c02733ad54e8014e5a5dd52a"
   },
   "claude": [
     {
@@ -73,8 +77,7 @@
       "kind": "string",
       "choices": [
         "prefix",
-        "exact",
-        "claude-opus-5"
+        "exact"
       ],
       "custom": false,
       "scope": "Managed",
@@ -415,7 +418,7 @@
       "custom": false,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#allowmanagedpermissionrulesonly",
-      "default": "--settings",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
@@ -583,7 +586,7 @@
       "custom": false,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#permissions-blockwritesoutsideworkingdirectories",
-      "default": "permissions",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -737,7 +740,7 @@
       "custom": false,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-autoallowbashifsandboxed",
-      "default": "true",
+      "default": "false",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -796,7 +799,7 @@
       "custom": true,
       "scope": "Any file, with limits on project and local settings",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-filesystem-allowwrite",
-      "default": "--add-dir",
+      "default": "未指定",
       "read_only": null,
       "initial": "[]",
       "retired": false,
@@ -824,7 +827,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-filesystem-denyread",
-      "default": "~/.aws/credentials",
+      "default": "未指定",
       "read_only": null,
       "initial": "[]",
       "retired": false,
@@ -968,7 +971,7 @@
       "custom": true,
       "scope": "User or managed",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-ripgrep",
-      "default": "USE_BUILTIN_RIPGREP",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -982,7 +985,7 @@
       "custom": true,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-bwrappath",
-      "default": "bwrap",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
@@ -996,7 +999,7 @@
       "custom": true,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-socatpath",
-      "default": "socat",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
@@ -1083,7 +1086,7 @@
       "custom": true,
       "scope": "User or managed",
       "source": "https://code.claude.com/docs/en/settings-reference#sandbox-credentials-sigv4",
-      "default": "\"deny\"",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -1308,7 +1311,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#automemorydirectory",
-      "default": "~/.claude/projects/<project>/memory/",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -1429,7 +1432,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#plansdirectory",
-      "default": "~/.claude/plans",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -1469,7 +1472,7 @@
       "kind": "raw",
       "choices": [],
       "custom": true,
-      "scope": "未記載",
+      "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#taskoutputmaxchars",
       "default": "",
       "read_only": "公式リファレンスで廃止済みとされている設定です。",
@@ -1558,7 +1561,7 @@
       "custom": false,
       "scope": "User or managed",
       "source": "https://code.claude.com/docs/en/settings-reference#basheditdiffenabled",
-      "default": "bypassPermissions",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -1817,7 +1820,7 @@
       "custom": true,
       "scope": "User or managed",
       "source": "https://code.claude.com/docs/en/settings-reference#spellcheck",
-      "default": "checker",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -1876,20 +1879,6 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#statusline",
-      "default": "未指定",
-      "read_only": null,
-      "initial": "{}",
-      "retired": false,
-      "deprecated": false
-    },
-    {
-      "key": "subagentStatusLine",
-      "type_name": "object with type set to \"command\" and a command string",
-      "kind": "raw",
-      "choices": [],
-      "custom": true,
-      "scope": "Any file",
-      "source": "https://code.claude.com/docs/en/settings-reference#subagentstatusline",
       "default": "未指定",
       "read_only": null,
       "initial": "{}",
@@ -1979,7 +1968,7 @@
         "24-hour",
         "24-hour-utc"
       ],
-      "custom": false,
+      "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#timeformat",
       "default": "\"auto\"",
@@ -2048,7 +2037,7 @@
       "custom": false,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#viewmode",
-      "default": "verbose",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -2076,7 +2065,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#voice",
-      "default": "enabled",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -2186,7 +2175,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#attribution-commit",
-      "default": "Co-Authored-By: <name> <noreply@anthropic.com>",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -2200,7 +2189,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#attribution-pr",
-      "default": "🤖 Generated with [Claude Code](https://claude.com/claude-code)",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -2327,7 +2316,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#httphookallowedenvvars",
-      "default": "allowedEnvVars",
+      "default": "未指定",
       "read_only": null,
       "initial": "[]",
       "retired": false,
@@ -2411,7 +2400,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#skilloverrides",
-      "default": "\"on\"",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -2507,7 +2496,7 @@
       "custom": false,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#disablecommandpluginsources",
-      "default": "allowManagedHooksOnly",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
@@ -2577,7 +2566,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#enabledplugins",
-      "default": "defaultEnabled",
+      "default": "未指定",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -2665,10 +2654,10 @@
         false
       ],
       "custom": false,
-      "scope": "Managed, from the device's own managed settings only: an MDM-deployed plist or HKLM registry key, or a system managed-settings",
+      "scope": "Managed, from the device's own managed settings only: an MDM-deployed plist or HKLM registry key, or a system managed-settings.json file",
       "source": "https://code.claude.com/docs/en/settings-reference#allowclaudeinchromewithmanagedmcp",
       "default": "false",
-      "read_only": "この項目の適用範囲はユーザー設定ではありません。公式ページを確認してください。",
+      "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
       "deprecated": false
@@ -2915,7 +2904,7 @@
         "fresh",
         "head"
       ],
-      "custom": true,
+      "custom": false,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#worktree-baseref",
       "default": "\"fresh\"",
@@ -2975,7 +2964,7 @@
       "kind": "string",
       "choices": [],
       "custom": true,
-      "scope": "User, in ~/",
+      "scope": "User, in ~/.claude/settings.json on the remote machine",
       "source": "https://code.claude.com/docs/en/settings-reference#worktree-location",
       "default": "未指定",
       "read_only": null,
@@ -3340,7 +3329,7 @@
       "custom": true,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#gatewayinternalnetworks",
-      "default": "/login",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "[]",
       "retired": false,
@@ -3354,7 +3343,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#gcpauthrefresh",
-      "default": "gcloud auth application-default login",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -3363,7 +3352,7 @@
     {
       "key": "otelHeadersHelper",
       "type_name": "string, an executable path or a shell command line",
-      "kind": "raw",
+      "kind": "string",
       "choices": [],
       "custom": true,
       "scope": "Any file",
@@ -3385,7 +3374,7 @@
       "custom": false,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#autoupdateschannel",
-      "default": "\"latest\"",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -3393,7 +3382,7 @@
     },
     {
       "key": "minimumVersion",
-      "type_name": "string, a version number such as \"2.1.100\"; a value that isn't a valid version is ignored",
+      "type_name": "string, a version number such as \"2.1.323\"; a value that isn't a valid version is ignored",
       "kind": "string",
       "choices": [],
       "custom": true,
@@ -3538,7 +3527,7 @@
       "custom": true,
       "scope": "Any file",
       "source": "https://code.claude.com/docs/en/settings-reference#feedbacksurveyrate",
-      "default": "0.005",
+      "default": "未指定",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -3651,7 +3640,7 @@
       "custom": true,
       "scope": "Managed",
       "source": "https://code.claude.com/docs/en/settings-reference#policyhelper-path",
-      "default": "policyHelper",
+      "default": "未指定",
       "read_only": "管理者専用の設定です。ユーザーのsettings.jsonでは適用されません。",
       "initial": "",
       "retired": false,
@@ -3902,6 +3891,22 @@
       "initial": "",
       "retired": true,
       "deprecated": false
+    },
+    {
+      "retired": true,
+      "deprecated": false,
+      "key": "subagentStatusLine",
+      "type_name": "object with type set to \"command\" and a command string",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "Any file",
+      "source": "https://code.claude.com/docs/en/settings-reference#subagentstatusline",
+      "default": "未指定",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "{}",
+      "status_reason": "Claude Code 2.1.323で削除されました。サブエージェントの行は常に既定の表示になり、このキーが残っていても設定ファイルは読み込まれます。",
+      "status_source": "https://github.com/anthropics/claude-code/blob/main/CHANGELOG.md#21323"
     }
   ],
   "codex": [
@@ -3910,6 +3915,8 @@
       "type_name": "string",
       "kind": "string",
       "choices": [
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
         "gpt-6-astra",
         "gpt-6.1-sol",
         "gpt-6.1-terra",
@@ -3929,6 +3936,8 @@
       "type_name": "string",
       "kind": "string",
       "choices": [
+        "gpt-6.2-astra",
+        "gpt-6.2-sol",
         "gpt-6-astra",
         "gpt-6.1-sol",
         "gpt-6.1-terra",
@@ -4611,10 +4620,10 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "default": "",
-      "read_only": "公式リファレンスで廃止済みとされている設定です。",
+      "read_only": null,
       "initial": "",
-      "retired": true,
-      "deprecated": false
+      "retired": false,
+      "deprecated": true
     },
     {
       "key": "service_tier",
@@ -5350,6 +5359,20 @@
       "deprecated": false
     },
     {
+      "key": "mcp_servers.<id>.env_vars",
+      "type_name": "array<string | { name = string, source = \"local\" | \"remote\" }>",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "mcp_servers.<id>.cwd",
       "type_name": "string",
       "kind": "string",
@@ -5383,7 +5406,8 @@
       "kind": "string",
       "choices": [
         "oauth",
-        "chatgpt"
+        "chatgpt",
+        "ema_auth"
       ],
       "custom": false,
       "scope": "User config.toml",
@@ -6161,6 +6185,23 @@
       "deprecated": false
     },
     {
+      "key": "features.gateway_setup_wizard",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.shell_snapshot",
       "type_name": "boolean",
       "kind": "bool",
@@ -6192,7 +6233,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "Codexの機能フラグの一覧で、Deprecated（非推奨）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.goals",
@@ -6254,10 +6297,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "default": "",
-      "read_only": "公式リファレンスで廃止済みとされている設定です。",
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
       "retired": true,
-      "deprecated": false
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.network_proxy",
@@ -6466,7 +6511,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": true
+      "deprecated": true,
+      "status_reason": "features.web_search_requestの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.web_search_cached",
@@ -6483,7 +6530,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "Codexの機能フラグの一覧で、Deprecated（非推奨）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.web_search_request",
@@ -6500,7 +6549,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "Codexの機能フラグの一覧で、Deprecated（非推奨）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.shell_tool",
@@ -6767,6 +6818,34 @@
       "default": "false",
       "read_only": null,
       "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "model_providers.<id>.gateway_oauth.device_authorization_url",
+      "type_name": "string",
+      "kind": "string",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "model_providers.<id>.gateway_oauth.credential_export",
+      "type_name": "table",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "{}",
       "retired": false,
       "deprecated": false
     },
@@ -7460,6 +7539,23 @@
       "deprecated": false
     },
     {
+      "key": "otel.log_sse_deltas",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "otel.log_user_prompt",
       "type_name": "boolean",
       "kind": "bool",
@@ -7869,7 +7965,8 @@
       "choices": [
         "auto",
         "osc9",
-        "bel"
+        "bel",
+        "osc777"
       ],
       "custom": false,
       "scope": "User config.toml",
@@ -7944,6 +8041,23 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "default": "\"auto\"",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.collapse_turn_details",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "false",
       "read_only": null,
       "initial": "",
       "retired": false,
@@ -8473,6 +8587,23 @@
       "deprecated": false
     },
     {
+      "key": "tools.web_search",
+      "type_name": "boolean | { context_size = \"low|medium|high\", allowed_domains = [string], location = { country, region, city, timezone } }",
+      "kind": "raw",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "{}",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "web_search",
       "type_name": "disabled | cached | indexed | live",
       "kind": "string",
@@ -8584,6 +8715,42 @@
       "kind": "raw",
       "choices": [],
       "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "permissions.<name>.filesystem.<path-or-glob>",
+      "type_name": "\"read\" | \"write\" | \"deny\" | table",
+      "kind": "raw",
+      "choices": [
+        "read",
+        "write",
+        "deny"
+      ],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "permissions.<name>.filesystem.\":workspace_roots\".<subpath-or-glob>",
+      "type_name": "\"read\" | \"write\" | \"deny\"",
+      "kind": "string",
+      "choices": [
+        "read",
+        "write",
+        "deny"
+      ],
+      "custom": false,
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-file/config-reference",
       "default": "",
@@ -8904,7 +9071,7 @@
       "deprecated": false
     },
     {
-      "key": "notice.hide_gpt-5.1-codex-max_migration_prompt",
+      "key": "notice.\"hide_gpt-5.1-codex-max_migration_prompt\"",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -9231,34 +9398,6 @@
     },
     {
       "key": "auto_review.experimental_conversation_history_prompt",
-      "type_name": "string",
-      "kind": "string",
-      "choices": [],
-      "custom": true,
-      "scope": "User config.toml",
-      "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "",
-      "read_only": null,
-      "initial": "",
-      "retired": false,
-      "deprecated": false
-    },
-    {
-      "key": "auto_review.experimental_policy_template",
-      "type_name": "string",
-      "kind": "string",
-      "choices": [],
-      "custom": true,
-      "scope": "User config.toml",
-      "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "",
-      "read_only": null,
-      "initial": "",
-      "retired": false,
-      "deprecated": false
-    },
-    {
-      "key": "auto_review.extra_policy",
       "type_name": "string",
       "kind": "string",
       "choices": [],
@@ -9772,6 +9911,23 @@
       "deprecated": false
     },
     {
+      "key": "features.agent_message_board_mcp",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.analytics_plan_history",
       "type_name": "boolean",
       "kind": "bool",
@@ -9851,10 +10007,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.apply_patch_preserve_line_endings",
@@ -9868,10 +10026,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.apply_patch_streaming_events",
@@ -9919,10 +10079,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "{}",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.apps_mcp_path_override.enabled",
@@ -9995,6 +10157,23 @@
       "kind": "raw",
       "choices": [],
       "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.async_compaction_root_only",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
@@ -10157,6 +10336,23 @@
       "deprecated": false
     },
     {
+      "key": "features.cli_resume_account_check",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.code_mode",
       "type_name": "boolean | object",
       "kind": "raw",
@@ -10230,10 +10426,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.code_mode_host",
@@ -10400,10 +10598,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.code_mode_tool_search",
@@ -10451,10 +10651,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.codex_hooks",
@@ -10471,7 +10673,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.hooksの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.collab",
@@ -10488,10 +10692,31 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.multi_agentの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.collaboration_modes",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
+    },
+    {
+      "key": "features.command_sessions_world_state",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -10573,7 +10798,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.appsの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.content_item_kinds",
@@ -10777,6 +11004,23 @@
       "deprecated": false
     },
     {
+      "key": "features.daybreak_program_propagation",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.default_mode_request_user_input",
       "type_name": "boolean",
       "kind": "bool",
@@ -10856,10 +11100,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.enable_experimental_windows_sandbox",
@@ -10873,10 +11119,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "features.experimental_windows_sandboxの旧名です。移行先も廃止されています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.enable_fanout",
@@ -10890,10 +11138,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.enable_mcp_apps",
@@ -10995,7 +11245,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.unified_execの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.experimental_windows_sandbox",
@@ -11009,10 +11261,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.external_agent_memory_import",
@@ -11043,10 +11297,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.gcp_setup_wizard",
@@ -11100,6 +11356,23 @@
       "deprecated": false
     },
     {
+      "key": "features.guardian_denial_reconsideration",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.guardian_enhanced_node_repl_transcripts",
       "type_name": "boolean",
       "kind": "bool",
@@ -11118,6 +11391,25 @@
     },
     {
       "key": "features.guardian_ext",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
+    },
+    {
+      "key": "features.guardian_include_additional_context",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -11498,6 +11790,79 @@
       "deprecated": false
     },
     {
+      "key": "features.guardianv2.sync_elastic_budgeting",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.guardianv2.sync_elastic_sections",
+      "type_name": "object",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "{}",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.guardianv2.sync_elastic_sections.<name>.max_section_entry_tokens",
+      "type_name": "integer",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.guardianv2.sync_elastic_sections.<name>.max_total_section_tokens",
+      "type_name": "integer",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.guardianv2.sync_elastic_sections.<name>.min_total_section_tokens",
+      "type_name": "integer",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "features.guardianv2.thread_context",
       "type_name": "boolean",
       "kind": "bool",
@@ -11509,10 +11874,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": "公式リファレンスで廃止済みとされている設定です。",
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
       "retired": true,
-      "deprecated": false
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.guardianv2.transcript",
@@ -11698,7 +12065,7 @@
       "deprecated": false
     },
     {
-      "key": "features.image_detail_original",
+      "key": "features.hosted_search_policy",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -11715,7 +12082,43 @@
       "deprecated": false
     },
     {
+      "key": "features.image_detail_original",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
+    },
+    {
       "key": "features.image_generation",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.image_generation_animation",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -11763,7 +12166,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.image_generationの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.in_app_browser",
@@ -11981,10 +12386,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.js_repl",
@@ -11998,10 +12405,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.js_repl_tools_only",
@@ -12015,10 +12424,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.local_thread_store_compression",
@@ -12049,10 +12460,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.login_shell_package_path",
@@ -12090,6 +12503,23 @@
     },
     {
       "key": "features.mcp_connection_sharing",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "features.mcp_lazy_stdio_startup",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -12154,7 +12584,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.memoriesの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.mentions_v2",
@@ -12202,10 +12634,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.multi_agent_v2",
@@ -12898,10 +13332,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.plugin_hooks",
@@ -12915,10 +13351,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.plugin_sharing",
@@ -13017,10 +13455,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.reasoning_effort_override",
@@ -13068,10 +13508,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.remote_control",
@@ -13085,10 +13527,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.remote_models",
@@ -13102,10 +13546,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.request_permissions",
@@ -13122,7 +13568,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.exec_permission_approvalsの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.request_permissions_tool",
@@ -13153,10 +13601,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.resize_all_images",
@@ -13170,10 +13620,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.respect_system_proxy",
@@ -13204,10 +13656,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.responses_websockets_v2",
@@ -13221,10 +13675,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.retain_client_developer_messages",
@@ -13374,10 +13830,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.secret_auth_storage",
@@ -13408,10 +13866,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.send_message_to_user_async",
@@ -13459,10 +13919,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.simplified_selection_hints",
@@ -13510,10 +13972,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.skill_search",
@@ -13612,10 +14076,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.stable_environment_tools",
@@ -13629,10 +14095,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.standalone_web_search",
@@ -13663,10 +14131,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.step_model_switching",
@@ -13768,7 +14238,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "features.chronicleの旧名です。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.terminal_resize_reflow",
@@ -13782,10 +14254,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.terminal_visualization_instructions",
@@ -14002,10 +14476,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.tool_search_always_defer_mcp_tools",
@@ -14019,10 +14495,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.tool_suggest",
@@ -14053,10 +14531,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.tui_app_server",
@@ -14070,10 +14550,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.tui_extensions_statusline",
@@ -14110,7 +14592,7 @@
       "deprecated": false
     },
     {
-      "key": "features.unavailable_dummy_tools",
+      "key": "features.tui_workspace",
       "type_name": "boolean",
       "kind": "bool",
       "choices": [
@@ -14125,6 +14607,25 @@
       "initial": "",
       "retired": false,
       "deprecated": false
+    },
+    {
+      "key": "features.unavailable_dummy_tools",
+      "type_name": "boolean",
+      "kind": "bool",
+      "choices": [
+        true,
+        false
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.unbounded_connection_retries",
@@ -14155,10 +14656,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.unified_exec_tty",
@@ -14189,10 +14692,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.unified_image_budget",
@@ -14260,7 +14765,9 @@
       "read_only": null,
       "initial": "",
       "retired": false,
-      "deprecated": false
+      "deprecated": true,
+      "status_reason": "Codexの機能フラグの一覧で、Deprecated（非推奨）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.use_linux_sandbox_bwrap",
@@ -14274,10 +14781,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.use_xaa",
@@ -14359,10 +14868,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.worktrees",
@@ -14376,10 +14887,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codexの機能フラグの一覧で、Removed（廃止）とされています。",
+      "status_source": "https://github.com/openai/codex/blob/c376cf7396eff83ce4c6ac61b9553df142e7a0be/codex-rs/features/src/lib.rs"
     },
     {
       "key": "features.write_stdin_approval",
@@ -17447,20 +17960,6 @@
       "deprecated": false
     },
     {
-      "key": "mcp_servers.<id>.env_vars",
-      "type_name": "array",
-      "kind": "raw",
-      "choices": [],
-      "custom": true,
-      "scope": "User config.toml",
-      "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "",
-      "read_only": null,
-      "initial": "[]",
-      "retired": false,
-      "deprecated": false
-    },
-    {
       "key": "mcp_servers.<id>.env_vars.<index>.name",
       "type_name": "string",
       "kind": "string",
@@ -17980,6 +18479,48 @@
       "deprecated": false
     },
     {
+      "key": "model_providers.<id>.gateway_oauth.credential_export.args",
+      "type_name": "array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "[]",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "model_providers.<id>.gateway_oauth.credential_export.command",
+      "type_name": "string",
+      "kind": "string",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "model_providers.<id>.gateway_oauth.credential_export.timeout_ms",
+      "type_name": "integer",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "30000",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "model_providers.<id>.location",
       "type_name": "string",
       "kind": "string",
@@ -18437,23 +18978,6 @@
       "kind": "string",
       "choices": [],
       "custom": true,
-      "scope": "User config.toml",
-      "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "",
-      "read_only": null,
-      "initial": "",
-      "retired": false,
-      "deprecated": false
-    },
-    {
-      "key": "otel.log_sse_deltas",
-      "type_name": "boolean",
-      "kind": "bool",
-      "choices": [
-        true,
-        false
-      ],
-      "custom": false,
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
@@ -19274,10 +19798,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codex 0.134.0以降は対応していません。書かれていると、--profileの有無にかかわらず起動時にエラーになります。--profile <名前>と<名前>.config.tomlを使います。",
+      "status_source": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles"
     },
     {
       "key": "profiles",
@@ -19288,10 +19814,12 @@
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
       "default": "{}",
-      "read_only": null,
+      "read_only": "公式資料で廃止とされている設定です。",
       "initial": "{}",
-      "retired": false,
-      "deprecated": false
+      "retired": true,
+      "deprecated": false,
+      "status_reason": "Codex 0.134.0以降は読み込まれません。--profileで同じ名前を指定すると起動時にエラーになります。設定は<名前>.config.tomlへ移します。",
+      "status_source": "https://learn.chatgpt.com/docs/config-file/config-advanced#profiles"
     },
     {
       "key": "projects",
@@ -19584,6 +20112,23 @@
       "deprecated": false
     },
     {
+      "key": "tools.client_search_provider",
+      "type_name": "string",
+      "kind": "string",
+      "choices": [
+        "standalone",
+        "search_mcp"
+      ],
+      "custom": false,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tools.experimental_request_user_input",
       "type_name": "object",
       "kind": "raw",
@@ -19642,20 +20187,6 @@
       "default": "false",
       "read_only": null,
       "initial": "",
-      "retired": false,
-      "deprecated": false
-    },
-    {
-      "key": "tools.web_search",
-      "type_name": "object",
-      "kind": "raw",
-      "choices": [],
-      "custom": true,
-      "scope": "User config.toml",
-      "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "",
-      "read_only": null,
-      "initial": "{}",
       "retired": false,
       "deprecated": false
     },
@@ -19815,6 +20346,20 @@
       "deprecated": false
     },
     {
+      "key": "tui.default_hosts",
+      "type_name": "object",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "{}",
+      "read_only": null,
+      "initial": "{}",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tui.effects",
       "type_name": "object",
       "kind": "raw",
@@ -19955,7 +20500,7 @@
       "custom": true,
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "{\"agents\": {\"archive\": null, \"delete\": null, \"fork\": null, \"hide\": null, \"new_task\": null, \"new_worktree\": null, \"rename\": null, \"resume\": null, \"search\": null, \"stop\": null, \"toggle_grouping\": null, \"toggle_pin\": null}, \"approval\": {\"approve\": null, \"approve_for_prefix\": null, \"approve_for_session\": null, \"cancel\": null, \"decline\": null, \"deny\": null, \"open_fullscreen\": null, \"open_thread\": null}, \"chat\": {\"decrease_reasoning_effort\": null, \"edit_queued_message\": null, \"increase_reasoning_effort\": null, \"interrupt_turn\": null, \"next_permission_mode\": null, \"open_presets\": null, \"previous_permission_mode\": null, \"prompt_stack_back\": null, \"skip_question\": null, \"toggle_voice\": null, \"toggle_voice_mute\": null}, \"composer\": {\"history_search_next\": null, \"history_search_previous\": null, \"queue\": null, \"submit\": null, \"toggle_shortcuts\": null}, \"editor\": {\"delete_backward\": null, \"delete_backward_word\": null, \"delete_forward\": null, \"delete_forward_word\": null, \"insert_newline\": null, \"kill_line_end\": null, \"kill_line_start\": null, \"kill_whole_line\": null, \"move_down\": null, \"move_left\": null, \"move_line_end\": null, \"move_line_start\": null, \"move_right\": null, \"move_up\": null, \"move_word_left\": null, \"move_word_right\": null, \"yank\": null}, \"global\": {\"clear_terminal\": null, \"copy\": null, \"find_transcript\": null, \"focus_activity\": null, \"leader\": null, \"open_agents\": null, \"open_external_editor\": null, \"open_transcript\": null, \"queue\": null, \"select_transcript\": null, \"submit\": null, \"toggle_fast_mode\": null, \"toggle_raw_output\": null, \"toggle_shortcuts\": null, \"toggle_side_conversation\": null, \"toggle_vim_mode\": null}, \"list\": {\"accept\": null, \"cancel\": null, \"jump_bottom\": null, \"jump_top\": null, \"move_down\": null, \"move_left\": null, \"move_right\": null, \"move_up\": null, \"page_down\": null, \"page_up\": null}, \"pager\": {\"close\": null, \"close_transcript\": null, \"find\": null, \"half_page_down\": null, \"half_page_up\": null, \"jump_bottom\": null, \"jump_top\": null, \"page_down\": null, \"page_up\": null, \"scroll_down\": null, \"scroll_up\": null}, \"vim_normal\": {\"append_after_cursor\": null, \"append_line_end\": null, \"cancel_operator\": null, \"change_to_line_end\": null, \"delete_char\": null, \"delete_to_line_end\": null, \"enter_insert\": null, \"enter_replace_mode\": null, \"find_backward\": null, \"find_forward\": null, \"insert_line_start\": null, \"jump_bottom\": null, \"jump_top\": null, \"move_down\": null, \"move_left\": null, \"move_line_end\": null, \"move_line_start\": null, \"move_right\": null, \"move_up\": null, \"move_word_backward\": null, \"move_word_end\": null, \"move_word_forward\": null, \"open_line_above\": null, \"open_line_below\": null, \"paste_after\": null, \"redo\": null, \"repeat_last_change\": null, \"replace_char\": null, \"start_change_operator\": null, \"start_delete_operator\": null, \"start_yank_operator\": null, \"substitute_char\": null, \"till_backward\": null, \"till_forward\": null, \"undo\": null, \"yank_line\": null}, \"vim_operator\": {\"cancel\": null, \"delete_line\": null, \"motion_down\": null, \"motion_find_backward\": null, \"motion_find_forward\": null, \"motion_jump_bottom\": null, \"motion_jump_top\": null, \"motion_left\": null, \"motion_line_end\": null, \"motion_line_start\": null, \"motion_right\": null, \"motion_till_backward\": null, \"motion_till_forward\": null, \"motion_up\": null, \"motion_word_backward\": null, \"motion_word_end\": null, \"motion_word_forward\": null, \"select_around_text_object\": null, \"select_inner_text_object\": null, \"yank_line\": null}, \"vim_search\": {\"backward\": null, \"forward\": null, \"next\": null, \"previous\": null}, \"vim_text_object\": {\"backtick\": null, \"big_word\": null, \"braces\": null, \"brackets\": null, \"cancel\": null, \"double_quote\": null, \"parentheses\": null, \"single_quote\": null, \"word\": null}}",
+      "default": "{\"agents\": {\"archive\": null, \"delete\": null, \"fork\": null, \"hide\": null, \"new_task\": null, \"new_worktree\": null, \"rename\": null, \"resume\": null, \"search\": null, \"stop\": null, \"toggle_grouping\": null, \"toggle_pin\": null}, \"approval\": {\"approve\": null, \"approve_for_prefix\": null, \"approve_for_session\": null, \"cancel\": null, \"decline\": null, \"deny\": null, \"open_fullscreen\": null, \"open_thread\": null}, \"chat\": {\"decrease_reasoning_effort\": null, \"edit_queued_message\": null, \"increase_reasoning_effort\": null, \"interrupt_turn\": null, \"next_permission_mode\": null, \"open_presets\": null, \"previous_permission_mode\": null, \"prompt_stack_back\": null, \"skip_question\": null, \"toggle_voice\": null, \"toggle_voice_mute\": null}, \"composer\": {\"history_search_next\": null, \"history_search_previous\": null, \"queue\": null, \"submit\": null, \"toggle_shortcuts\": null}, \"editor\": {\"delete_backward\": null, \"delete_backward_word\": null, \"delete_forward\": null, \"delete_forward_word\": null, \"insert_newline\": null, \"kill_line_end\": null, \"kill_line_start\": null, \"kill_whole_line\": null, \"move_down\": null, \"move_left\": null, \"move_line_end\": null, \"move_line_start\": null, \"move_right\": null, \"move_up\": null, \"move_word_left\": null, \"move_word_right\": null, \"yank\": null}, \"global\": {\"change_host\": null, \"clear_terminal\": null, \"close_sidebar_tab\": null, \"copy\": null, \"equalize_pane_widths\": null, \"find_transcript\": null, \"focus_activity\": null, \"focus_main_composer\": null, \"focus_pane_left\": null, \"focus_pane_right\": null, \"focus_sidebar_content\": null, \"focus_sidebar_tabs\": null, \"hide_pane\": null, \"leader\": null, \"maximize_pane_width\": null, \"minimize_pane_width\": null, \"move_divider_left\": null, \"move_divider_right\": null, \"open_agents\": null, \"open_external_editor\": null, \"open_transcript\": null, \"queue\": null, \"resize_panes\": null, \"select_transcript\": null, \"sidebar_down\": null, \"sidebar_up\": null, \"submit\": null, \"toggle_fast_mode\": null, \"toggle_pane_zoom\": null, \"toggle_raw_output\": null, \"toggle_shortcuts\": null, \"toggle_side_conversation\": null, \"toggle_vim_mode\": null}, \"list\": {\"accept\": null, \"cancel\": null, \"jump_bottom\": null, \"jump_top\": null, \"move_down\": null, \"move_left\": null, \"move_right\": null, \"move_up\": null, \"page_down\": null, \"page_up\": null}, \"pager\": {\"close\": null, \"close_transcript\": null, \"find\": null, \"half_page_down\": null, \"half_page_up\": null, \"jump_bottom\": null, \"jump_top\": null, \"page_down\": null, \"page_up\": null, \"scroll_down\": null, \"scroll_up\": null}, \"vim_normal\": {\"append_after_cursor\": null, \"append_line_end\": null, \"cancel_operator\": null, \"change_to_line_end\": null, \"delete_char\": null, \"delete_to_line_end\": null, \"enter_insert\": null, \"enter_replace_mode\": null, \"find_backward\": null, \"find_forward\": null, \"insert_line_start\": null, \"jump_bottom\": null, \"jump_top\": null, \"move_down\": null, \"move_left\": null, \"move_line_end\": null, \"move_line_start\": null, \"move_right\": null, \"move_up\": null, \"move_word_backward\": null, \"move_word_end\": null, \"move_word_forward\": null, \"open_line_above\": null, \"open_line_below\": null, \"paste_after\": null, \"redo\": null, \"repeat_last_change\": null, \"replace_char\": null, \"start_change_operator\": null, \"start_delete_operator\": null, \"start_yank_operator\": null, \"substitute_char\": null, \"till_backward\": null, \"till_forward\": null, \"undo\": null, \"yank_line\": null}, \"vim_operator\": {\"cancel\": null, \"delete_line\": null, \"motion_down\": null, \"motion_find_backward\": null, \"motion_find_forward\": null, \"motion_jump_bottom\": null, \"motion_jump_top\": null, \"motion_left\": null, \"motion_line_end\": null, \"motion_line_start\": null, \"motion_right\": null, \"motion_till_backward\": null, \"motion_till_forward\": null, \"motion_up\": null, \"motion_word_backward\": null, \"motion_word_end\": null, \"motion_word_forward\": null, \"select_around_text_object\": null, \"select_inner_text_object\": null, \"yank_line\": null}, \"vim_search\": {\"backward\": null, \"forward\": null, \"next\": null, \"previous\": null}, \"vim_text_object\": {\"backtick\": null, \"big_word\": null, \"braces\": null, \"brackets\": null, \"cancel\": null, \"double_quote\": null, \"parentheses\": null, \"single_quote\": null, \"word\": null}}",
       "read_only": null,
       "initial": "{}",
       "retired": false,
@@ -20781,9 +21326,23 @@
       "custom": true,
       "scope": "User config.toml",
       "source": "https://learn.chatgpt.com/docs/config-schema.json",
-      "default": "{\"clear_terminal\": null, \"copy\": null, \"find_transcript\": null, \"focus_activity\": null, \"leader\": null, \"open_agents\": null, \"open_external_editor\": null, \"open_transcript\": null, \"queue\": null, \"select_transcript\": null, \"submit\": null, \"toggle_fast_mode\": null, \"toggle_raw_output\": null, \"toggle_shortcuts\": null, \"toggle_side_conversation\": null, \"toggle_vim_mode\": null}",
+      "default": "{\"change_host\": null, \"clear_terminal\": null, \"close_sidebar_tab\": null, \"copy\": null, \"equalize_pane_widths\": null, \"find_transcript\": null, \"focus_activity\": null, \"focus_main_composer\": null, \"focus_pane_left\": null, \"focus_pane_right\": null, \"focus_sidebar_content\": null, \"focus_sidebar_tabs\": null, \"hide_pane\": null, \"leader\": null, \"maximize_pane_width\": null, \"minimize_pane_width\": null, \"move_divider_left\": null, \"move_divider_right\": null, \"open_agents\": null, \"open_external_editor\": null, \"open_transcript\": null, \"queue\": null, \"resize_panes\": null, \"select_transcript\": null, \"sidebar_down\": null, \"sidebar_up\": null, \"submit\": null, \"toggle_fast_mode\": null, \"toggle_pane_zoom\": null, \"toggle_raw_output\": null, \"toggle_shortcuts\": null, \"toggle_side_conversation\": null, \"toggle_vim_mode\": null}",
       "read_only": null,
       "initial": "{}",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.change_host",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
       "retired": false,
       "deprecated": false
     },
@@ -20802,7 +21361,35 @@
       "deprecated": false
     },
     {
+      "key": "tui.keymap.global.close_sidebar_tab",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tui.keymap.global.copy",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.equalize_pane_widths",
       "type_name": "string | array",
       "kind": "raw",
       "choices": [],
@@ -20844,7 +21431,147 @@
       "deprecated": false
     },
     {
+      "key": "tui.keymap.global.focus_main_composer",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.focus_pane_left",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.focus_pane_right",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.focus_sidebar_content",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.focus_sidebar_tabs",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.hide_pane",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tui.keymap.global.leader",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.maximize_pane_width",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.minimize_pane_width",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.move_divider_left",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.move_divider_right",
       "type_name": "string | array",
       "kind": "raw",
       "choices": [],
@@ -20914,7 +21641,49 @@
       "deprecated": false
     },
     {
+      "key": "tui.keymap.global.resize_panes",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tui.keymap.global.select_transcript",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.sidebar_down",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.sidebar_up",
       "type_name": "string | array",
       "kind": "raw",
       "choices": [],
@@ -20943,6 +21712,20 @@
     },
     {
       "key": "tui.keymap.global.toggle_fast_mode",
+      "type_name": "string | array",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "[]",
+      "retired": false,
+      "deprecated": false
+    },
+    {
+      "key": "tui.keymap.global.toggle_pane_zoom",
       "type_name": "string | array",
       "kind": "raw",
       "choices": [],
@@ -22580,6 +23363,20 @@
       "deprecated": false
     },
     {
+      "key": "tui.sidebar_width_percent",
+      "type_name": "integer",
+      "kind": "raw",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": null,
+      "initial": "",
+      "retired": false,
+      "deprecated": false
+    },
+    {
       "key": "tui.status_line_use_colors",
       "type_name": "boolean",
       "kind": "bool",
@@ -22640,6 +23437,38 @@
       "initial": "",
       "retired": false,
       "deprecated": false
+    },
+    {
+      "retired": true,
+      "deprecated": false,
+      "key": "auto_review.extra_policy",
+      "type_name": "string",
+      "kind": "string",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "status_reason": "Codex 0.169.0で設定から削除され、指定しても無視されます（警告が出ます）。追加の規則は、管理者のrequirements.tomlのguardian_extra_policyで指定します。",
+      "status_source": "https://github.com/openai/codex/pull/60646"
+    },
+    {
+      "retired": true,
+      "deprecated": false,
+      "key": "auto_review.experimental_policy_template",
+      "type_name": "string",
+      "kind": "string",
+      "choices": [],
+      "custom": true,
+      "scope": "User config.toml",
+      "source": "https://learn.chatgpt.com/docs/config-schema.json",
+      "default": "",
+      "read_only": "公式資料で廃止とされている設定です。",
+      "initial": "",
+      "status_reason": "Codex 0.169.0で設定から削除され、指定しても無視されます（警告が出ます）。",
+      "status_source": "https://github.com/openai/codex/pull/60646"
     }
   ]
 }

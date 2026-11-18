@@ -130,6 +130,15 @@ impl Config {
                         .cloned()
                         .ok_or_else(|| anyhow::anyhow!("TOMLの値を入力してください"))?
                 };
+                // 同じ型・同じ内容なら、引用符やエスケープの表記を書き換えずに文書を残す。
+                if path
+                    .iter()
+                    .try_fold(root.as_item(), |item, key| item.get(key))
+                    .and_then(Item::as_value)
+                    .is_some_and(|current| same_scalar(current, &value))
+                {
+                    return Ok(());
+                }
                 let _ = set_toml(root.as_table_mut(), path, Some(value))?;
             }
         }
@@ -242,6 +251,21 @@ fn set_json(root: &mut Json, path: &[String], value: Option<Json>) -> Result<()>
     Ok(())
 }
 
+/// 単一の値どうしが同じ型・同じ内容か。表記 (引用符・エスケープ・数値の書き方) は比べない。
+/// 配列とインラインテーブルは、中の書式やコメントの変更も反映するため対象にしない。
+fn same_scalar(current: &Toml, new: &Toml) -> bool {
+    match (current, new) {
+        (Toml::String(current), Toml::String(new)) => current.value() == new.value(),
+        (Toml::Integer(current), Toml::Integer(new)) => current.value() == new.value(),
+        (Toml::Float(current), Toml::Float(new)) => {
+            current.value().to_bits() == new.value().to_bits()
+        }
+        (Toml::Boolean(current), Toml::Boolean(new)) => current.value() == new.value(),
+        (Toml::Datetime(current), Toml::Datetime(new)) => current.value() == new.value(),
+        _ => false,
+    }
+}
+
 fn set_toml(
     table: &mut dyn TableLike,
     path: &[String],
@@ -291,30 +315,16 @@ fn remove_toml_key(table: &mut dyn TableLike, key: &str) -> Option<String> {
         .unwrap_or("")
         .to_owned();
     let removed = table.remove(key)?;
-    let decor = match &removed {
-        Item::Value(value) => Some(value.decor()),
-        Item::Table(table) => Some(table.decor()),
-        _ => None,
-    };
-    if let Some(decor) = decor {
-        if let Item::Table(_) = &removed
-            && let Some(prefix) = decor
-                .prefix()
-                .and_then(|prefix| prefix.as_str())
-                .filter(|prefix| prefix.contains('#'))
-        {
-            comments.push_str(prefix);
-        }
-        if let Some(suffix) = decor
-            .suffix()
-            .and_then(|suffix| suffix.as_str())
-            .filter(|suffix| suffix.contains('#'))
-        {
-            comments.push_str(suffix);
-            if !comments.ends_with('\n') {
-                comments.push('\n');
+    match &removed {
+        Item::Value(value) => push_comments(value.decor(), false, &mut comments),
+        Item::Table(table) => push_header_comments(table, &mut comments),
+        // テーブルの配列は、要素ごとの見出しに付いたコメントを残す。
+        Item::ArrayOfTables(array) => {
+            for table in array.iter() {
+                push_header_comments(table, &mut comments);
             }
         }
+        Item::None => {}
     }
     if comments.is_empty() {
         return None;
@@ -337,4 +347,44 @@ fn remove_toml_key(table: &mut dyn TableLike, key: &str) -> Option<String> {
         }
     }
     Some(comments)
+}
+
+/// テーブルの見出しの上と行末のコメントを集め、中のテーブルとテーブルの配列もたどる。
+/// 暗黙のテーブルは見出しを持たないため、子の見出しに付いたコメントが集まる。
+fn push_header_comments(table: &toml_edit::Table, comments: &mut String) {
+    push_comments(table.decor(), true, comments);
+    for (_, item) in table.iter() {
+        match item {
+            Item::Table(table) => push_header_comments(table, comments),
+            Item::ArrayOfTables(array) => {
+                for table in array.iter() {
+                    push_header_comments(table, comments);
+                }
+            }
+            _ => {}
+        }
+    }
+}
+
+/// 装飾のうちコメントを含む部分を集める。値の前置きは `=` の後の空白なので、
+/// 見出しを持つテーブルだけ前置きも集める。
+fn push_comments(decor: &toml_edit::Decor, prefix: bool, comments: &mut String) {
+    if prefix
+        && let Some(prefix) = decor
+            .prefix()
+            .and_then(|prefix| prefix.as_str())
+            .filter(|prefix| prefix.contains('#'))
+    {
+        comments.push_str(prefix);
+    }
+    if let Some(suffix) = decor
+        .suffix()
+        .and_then(|suffix| suffix.as_str())
+        .filter(|suffix| suffix.contains('#'))
+    {
+        comments.push_str(suffix);
+        if !comments.ends_with('\n') {
+            comments.push('\n');
+        }
+    }
 }

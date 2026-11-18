@@ -221,13 +221,34 @@ fn curated_choice_explanations_match_catalog_values_and_have_official_sources() 
     let help: serde_json::Value =
         serde_json::from_str(include_str!("../data/choice-help.ja.json")).unwrap();
     assert!(!help["verified_at"].as_str().unwrap().is_empty());
-    for (name, provider, source_prefix) in [
-        ("claude", Provider::Claude, "https://code.claude.com/"),
-        ("codex", Provider::Codex, "https://learn.chatgpt.com/"),
+    // 公式の資料サイトと、公式リポジトリの更新履歴・リリースノートだけを出典にする。
+    for (name, provider, source_prefixes) in [
+        (
+            "claude",
+            Provider::Claude,
+            [
+                "https://code.claude.com/",
+                "https://github.com/anthropics/claude-code/",
+            ],
+        ),
+        (
+            "codex",
+            Provider::Codex,
+            [
+                "https://learn.chatgpt.com/",
+                "https://github.com/openai/codex/",
+            ],
+        ),
     ] {
         let mut seen = HashSet::new();
         for group in help[name].as_array().unwrap() {
-            assert!(group["source"].as_str().unwrap().starts_with(source_prefix));
+            let source = group["source"].as_str().unwrap();
+            assert!(
+                source_prefixes
+                    .iter()
+                    .any(|prefix| source.starts_with(prefix)),
+                "{name}: {source}"
+            );
             for key in group["keys"].as_array().unwrap() {
                 let key = key.as_str().unwrap();
                 let entry = crate::catalog::entries(provider)
@@ -704,7 +725,8 @@ fn setting_labels_replace_terminal_control_characters() {
     let fixture = Fixture::new();
     fixture.write(".claude/settings.json", r#"{"custom\u001b[31m":"value"}"#);
     let mut app = fixture.app();
-    select_field(&mut app, "custom\u{1b}[31m");
+    // 正規表記のキーでは、制御文字をJSONのエスケープで表す。
+    select_field(&mut app, r#""custom\u001b[31m""#);
     let mut terminal = Terminal::new(TestBackend::new(180, 45)).unwrap();
     terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
     assert!(
@@ -905,7 +927,7 @@ fn mcp_readiness_picker_keeps_quoted_names_comments_and_unrelated_settings() {
         Some("Codex · Default"),
     )
     .unwrap();
-    select_field(&mut app, "mcp_servers.work.example.startup_readiness");
+    select_field(&mut app, "mcp_servers.\"work.example\".startup_readiness");
     let Some(Modal::Select { options, .. }) = &app.modal else {
         panic!("候補の選択画面が開いていません");
     };
@@ -920,6 +942,146 @@ fn mcp_readiness_picker_keeps_quoted_names_comments_and_unrelated_settings() {
         fs::read_to_string(file).unwrap(),
         original.replace("'connection'", "\"catalog\"")
     );
+}
+
+#[test]
+fn canonical_keys_keep_dotted_quoted_and_template_parts_whole() {
+    use crate::catalog::{key_path, key_text, parse_key};
+    for (key, parts) in [
+        (
+            "notice.\"hide_gpt-5.1-codex-max_migration_prompt\"",
+            path(&["notice", "hide_gpt-5.1-codex-max_migration_prompt"]),
+        ),
+        (
+            "permissions.<name>.filesystem.\":workspace_roots\".<subpath-or-glob>",
+            path(&[
+                "permissions",
+                "<name>",
+                "filesystem",
+                ":workspace_roots",
+                "<subpath-or-glob>",
+            ]),
+        ),
+        (
+            "hooks.<Event>[].hooks[].async",
+            path(&["hooks", "<Event>[]", "hooks[]", "async"]),
+        ),
+        (
+            "mcp_servers.\"work.example\".command",
+            path(&["mcp_servers", "work.example", "command"]),
+        ),
+    ] {
+        assert_eq!(key_path(key), parts, "{key}");
+        assert_eq!(key_text(&parts), key);
+    }
+    // 引用符・バックスラッシュ・制御文字・日本語・空の名前も1つの部品のまま往復する。
+    let unusual = path(&["env", "a\"b\\c", "改行\nを含む", "", "*", "x y"]);
+    let text = key_text(&unusual);
+    assert_eq!(parse_key(&text), Some(unusual));
+    // 正規表記でない入力は分割を諦めて、ドットで区切るだけにする。
+    for broken in ["a..b", "a.", "\"unterminated", "a.\"b\"c", "a b.c"] {
+        assert!(parse_key(broken).is_none(), "{broken}");
+        assert_eq!(key_path(broken), broken.split('.').collect::<Vec<_>>());
+    }
+}
+
+#[test]
+fn bundled_keys_are_canonical_so_names_with_dots_stay_one_part() {
+    use crate::catalog::{entries, key_text, parse_key};
+    let canonical = |key: &str| parse_key(key).is_some_and(|parts| key_text(&parts) == key);
+    for provider in [Provider::Claude, Provider::Codex] {
+        for entry in entries(provider) {
+            assert!(canonical(&entry.key), "catalog key: {}", entry.key);
+        }
+    }
+    let help: serde_json::Value =
+        serde_json::from_str(include_str!("../data/settings-help.ja.json")).unwrap();
+    let choices: serde_json::Value =
+        serde_json::from_str(include_str!("../data/choice-help.ja.json")).unwrap();
+    for name in ["claude", "codex"] {
+        for key in help[name].as_object().unwrap().keys() {
+            assert!(canonical(key), "help key: {name}.{key}");
+        }
+        for group in choices[name].as_array().unwrap() {
+            for key in group["keys"].as_array().unwrap() {
+                let key = key.as_str().unwrap();
+                assert!(canonical(key), "choice help key: {name}.{key}");
+            }
+        }
+    }
+    let notice = entries(Provider::Codex)
+        .iter()
+        .find(|entry| entry.key.starts_with("notice.\"hide_gpt-5.1"))
+        .expect("the migration notice keeps its dotted name");
+    assert_eq!(
+        crate::catalog::key_path(&notice.key),
+        path(&["notice", "hide_gpt-5.1-codex-max_migration_prompt"])
+    );
+}
+
+#[test]
+fn dotted_codex_notice_is_matched_toggled_and_saved_as_one_quoted_key() {
+    let fixture = Fixture::new();
+    let original =
+        "# 移行の案内\n[notice]\n\"hide_gpt-5.1-codex-max_migration_prompt\" = true # 既読\n";
+    let file = fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    app.focus = crate::app::Focus::Settings;
+    let key_name = "notice.\"hide_gpt-5.1-codex-max_migration_prompt\"";
+    let rows = app.rows();
+    let matching = rows
+        .iter()
+        .filter(|field| field.path == path(&["notice", "hide_gpt-5.1-codex-max_migration_prompt"]))
+        .collect::<Vec<_>>();
+    assert_eq!(matching.len(), 1, "公式の項目と追加設定に分かれています");
+    assert!(matching[0].common);
+    assert_eq!(matching[0].key(), key_name);
+    assert_eq!(matching[0].value.as_deref(), Some("true"));
+    assert!(
+        !rows
+            .iter()
+            .any(|field| field.path.iter().any(|part| part == "hide_gpt-5"))
+    );
+    // 引用符なしでドットをつないだ表記でも検索できる。
+    app.query = "notice.hide_gpt-5.1-codex-max".into();
+    assert!(app.rows().iter().any(|field| field.key() == key_name));
+    app.query.clear();
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.key() == key_name)
+        .unwrap();
+    app.table_state.select(Some(index));
+    app.handle_key(key(KeyCode::Char(' ')));
+    app.config_mut().unwrap().save().unwrap();
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        original.replace("= true", "= false")
+    );
+
+    // 未設定から切り替えると、1つの引用されたキーとして書き込む。
+    let empty = Fixture::new();
+    let file = empty.write(".codex/config.toml", "");
+    let mut app = empty.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    app.focus = crate::app::Focus::Settings;
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.key() == key_name)
+        .unwrap();
+    app.table_state.select(Some(index));
+    app.handle_key(key(KeyCode::Char(' ')));
+    app.config_mut().unwrap().save().unwrap();
+    let saved = fs::read_to_string(&file).unwrap();
+    let document = saved.parse::<toml_edit::DocumentMut>().unwrap();
+    assert_eq!(
+        document["notice"]["hide_gpt-5.1-codex-max_migration_prompt"].as_bool(),
+        Some(true),
+        "{saved}"
+    );
+    assert!(document["notice"].get("hide_gpt-5").is_none(), "{saved}");
 }
 
 #[test]
@@ -1831,7 +1993,8 @@ fn retired_settings_are_hidden_unless_the_key_is_present() {
 fn configured_retired_settings_precede_active_settings_and_keep_full_paths() {
     let fixture = Fixture::new();
     fixture.write(".claude/settings.json", r#"{"model":"opus","keybindingFlavor":"readline","permissionExplainerEnabled":false,"teammateDefaultModel":null,"taskOutputMaxChars":0}"#);
-    fixture.write(".codex/config.toml", "model = 'sample-model'\npersonality = ''\n[features]\npersonality = false\n[features.guardianv2]\nasync_classifier_mode = 'conversations'\nthread_context = false\n[features.multi_agent_v2]\nusage_hint_enabled = false\n");
+    // profile は公式の設定表の外 (関連ページと公開版のソース) で廃止を確かめた項目。
+    fixture.write(".codex/config.toml", "model = 'sample-model'\nprofile = 'work'\n[features]\npersonality = false\n[features.guardianv2]\nasync_classifier_mode = 'conversations'\nthread_context = false\n[features.multi_agent_v2]\nusage_hint_enabled = false\n");
     let mut app = fixture.app();
     for expected in [4, 5] {
         let rows = app.rows();
@@ -1858,6 +2021,105 @@ fn configured_retired_settings_precede_active_settings_and_keep_full_paths() {
     );
     assert!(field.retired);
     assert!(field.tree_prefix.is_empty());
+}
+
+#[test]
+fn workspace_root_permissions_use_quoted_template_choices_and_save_one_value() {
+    let fixture = Fixture::new();
+    let original =
+        "[permissions.work.filesystem.\":workspace_roots\"]\n\"docs/**\" = \"read\" # 読むだけ\n";
+    let file = fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    // 引用された部品 (:workspace_roots) を1つの名前のままテンプレートと照合する。
+    select_field(
+        &mut app,
+        "permissions.work.filesystem.\":workspace_roots\".\"docs/**\"",
+    );
+    let Some(Modal::Select { options, .. }) = &app.modal else {
+        panic!("候補の選択画面が開いていません");
+    };
+    let labels = options
+        .iter()
+        .map(|option| option.label.as_str())
+        .collect::<Vec<_>>();
+    assert!(
+        ["read", "write", "deny"]
+            .iter()
+            .all(|value| labels.contains(value)),
+        "{labels:?}"
+    );
+    let write = options
+        .iter()
+        .find(|option| option.label == "write")
+        .unwrap();
+    assert!(write.help.description.contains("ワークスペースルート"));
+    assert!(
+        write
+            .help
+            .source
+            .starts_with("https://learn.chatgpt.com/docs/permissions")
+    );
+    choose(&mut app, "write");
+    app.config_mut().unwrap().save().unwrap();
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        original.replace("\"read\"", "\"write\"")
+    );
+}
+
+#[test]
+fn confirmed_statuses_show_reason_and_source_and_retired_values_can_be_removed() {
+    let fixture = Fixture::new();
+    fixture.write(
+        ".claude/settings.json",
+        r#"{"subagentStatusLine":{"type":"command","command":"status"}}"#,
+    );
+    let original = "profile = 'work'\n[features]\ncodex_hooks = true\n";
+    let file = fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.focus = Focus::Settings;
+    // 資料から消えた設定も、更新履歴で確かめた廃止として理由と出典を示す。
+    let index = app
+        .rows()
+        .iter()
+        .position(|field| field.key() == "subagentStatusLine")
+        .unwrap();
+    app.table_state.select(Some(index));
+    let field = app.current_field().unwrap();
+    assert!(field.retired);
+    assert!(field.status_reason.unwrap().contains("2.1.323"));
+    let mut terminal = Terminal::new(TestBackend::new(200, 50)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let screen = screen_text(&terminal);
+    assert!(screen.contains("状態の出典"), "{screen}");
+    assert!(screen.contains("2.1.323"), "{screen}");
+
+    app.handle_key(key(KeyCode::Char(']')));
+    app.focus = Focus::Settings;
+    let rows = app.rows();
+    let hooks = rows
+        .iter()
+        .find(|field| field.key() == "features.codex_hooks")
+        .unwrap();
+    assert!(hooks.deprecated);
+    assert!(hooks.status_reason.unwrap().contains("features.hooks"));
+    // 起動エラーになる廃止の設定は編集できないが、dで削除はできる。
+    let index = rows
+        .iter()
+        .position(|field| field.key() == "profile")
+        .unwrap();
+    assert!(rows[index].retired);
+    assert!(rows[index].disabled_reason().is_some());
+    app.table_state.select(Some(index));
+    app.handle_key(key(KeyCode::Char('d')));
+    app.handle_key(key(KeyCode::Char('y')));
+    app.config_mut().unwrap().save().unwrap();
+    assert_eq!(
+        fs::read_to_string(&file).unwrap(),
+        original.replace("profile = 'work'\n", "")
+    );
+    assert!(!app.rows().iter().any(|field| field.key() == "profile"));
 }
 
 #[test]
@@ -2491,4 +2753,249 @@ fn removing_a_grouped_profile_keeps_defaults_protected_and_documents_aligned() {
             .path
             .ends_with("codex-work/config.toml")
     );
+}
+
+#[test]
+fn arrays_of_tables_open_the_whole_document_editor_without_inlining() {
+    // テーブルの配列は、カタログやテンプレートの型が構造化された値でも全体編集で扱う。
+    // 変えずに反映しても、インラインの配列に書き直してコメントを失わない。
+    let fixture = Fixture::new();
+    let original = "# skills\n[[skills.config]]\n# first\npath = \"/a/SKILL.md\"\nenabled = false\n\n[[skills.config]]\npath = \"/b/SKILL.md\"\nenabled = true\n\n# guard\n[[hooks.ExampleEvent]]\nmatcher = \"shell\"\n";
+    fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    let rows = app.rows();
+    // 任意のイベント名の項目は、カタログのテンプレートから作られる。
+    assert!(
+        rows.iter()
+            .find(|field| field.key() == "hooks.ExampleEvent")
+            .unwrap()
+            .common
+    );
+    for name in ["skills.config", "hooks.ExampleEvent"] {
+        let field = rows.iter().find(|field| field.key() == name).unwrap();
+        assert_eq!(field.kind, fields::Kind::Document, "{name}");
+        select_field(&mut app, name);
+        assert!(
+            matches!(&app.modal, Some(Modal::Edit { path: None, .. })),
+            "{name}"
+        );
+        app.handle_key(control('s'));
+        assert!(app.modal.is_none());
+        assert_eq!(app.config().unwrap().text, original);
+        assert_eq!(app.dirty_count(), 0);
+    }
+}
+
+#[test]
+fn raw_values_holding_strings_open_with_their_literal_and_apply_unchanged() {
+    // 文字列も配列も取る項目では、文字列の値を元の引用符の表記で入力欄に出す。
+    // 変えずに反映しても数値に変えたり、構文の誤りにしたりしない。
+    let fixture = Fixture::new();
+    let json = "{\n  \"forceLoginOrgUUID\": \"123e4567-e89b-12d3-a456-426614174000\"\n}\n";
+    let toml = "chatgpt_base_url = 'https://chatgpt.example/backend-api/'\n\n[tui.keymap.vim_normal]\nmove_line_start = '0' # keep\n";
+    fixture.write(".claude/settings.json", json);
+    fixture.write(".codex/config.toml", toml);
+    let mut app = fixture.app();
+    select_field(&mut app, "forceLoginOrgUUID");
+    let Some(Modal::Edit { editor, plain, .. }) = &app.modal else {
+        panic!()
+    };
+    assert!(!plain);
+    assert_eq!(editor.text(), "\"123e4567-e89b-12d3-a456-426614174000\"");
+    app.handle_key(control('s'));
+    assert!(app.modal.is_none());
+    assert_eq!(app.config().unwrap().text, json);
+    app.handle_key(key(KeyCode::Char(']')));
+    select_field(&mut app, "tui.keymap.vim_normal.move_line_start");
+    let Some(Modal::Edit { editor, plain, .. }) = &app.modal else {
+        panic!()
+    };
+    assert!(!plain);
+    assert_eq!(editor.text(), "'0'");
+    app.handle_key(control('s'));
+    assert!(app.modal.is_none());
+    assert_eq!(app.config().unwrap().text, toml);
+    assert_eq!(app.dirty_count(), 0);
+    // 文字列だけの項目は、これまでどおり引用符なしで編集する。
+    select_field(&mut app, "chatgpt_base_url");
+    let Some(Modal::Edit { editor, plain, .. }) = &app.modal else {
+        panic!()
+    };
+    assert!(plain);
+    assert_eq!(editor.text(), "https://chatgpt.example/backend-api/");
+}
+
+#[test]
+fn pasted_cr_and_crlf_line_breaks_start_new_lines() {
+    // 端末によっては貼り付けの改行がCRだけやCRLFで届く。複数行の入力欄では改行にし、
+    // 1行の入力欄ではこれまでどおり取り除く。
+    let mut editor = Editor::new("");
+    editor.insert(
+        "# fast model\rmodel = \"gpt-5-mini\"\r\napproval_policy = \"never\"\r",
+        true,
+    );
+    assert_eq!(
+        editor.lines,
+        [
+            "# fast model",
+            "model = \"gpt-5-mini\"",
+            "approval_policy = \"never\"",
+            ""
+        ]
+    );
+    let Parsed::Toml(document) = parse(Provider::Codex, &editor.text()).unwrap() else {
+        panic!()
+    };
+    assert_eq!(document["model"].as_str(), Some("gpt-5-mini"));
+    let mut editor = Editor::new("");
+    editor.insert("a\rb\r\nc", false);
+    assert_eq!(editor.text(), "abc");
+}
+
+#[test]
+fn unchanged_toml_strings_keep_their_quotes_and_escapes_and_stay_clean() {
+    // 同じ文字列を反映しても、リテラル文字列・エスケープ・\u表記を書き換えず、
+    // 変更や取り消しの履歴として数えない。
+    for (original, name, value) in [
+        (
+            "chatgpt_base_url = 'https://chatgpt.example/backend-api/' # proxy\n",
+            "chatgpt_base_url",
+            "https://chatgpt.example/backend-api/",
+        ),
+        (
+            "model_instructions_file = \"C:\\\\Users\\\\me\\\\AGENTS.md\"\n",
+            "model_instructions_file",
+            "C:\\Users\\me\\AGENTS.md",
+        ),
+        (
+            "developer_instructions = \"caf\\u00e9\"\n",
+            "developer_instructions",
+            "café",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        let mut config = fixture.config(Provider::Codex, original);
+        config.set(&path(&[name]), value, true).unwrap();
+        // 構造化された値の入力欄で別の引用符にしても、同じ内容なら書き換えない。
+        let quoted = serde_json::to_string(value).unwrap();
+        config.set(&path(&[name]), &quoted, false).unwrap();
+        assert_eq!(config.text, original);
+        assert!(!config.dirty());
+        assert!(!config.undo());
+    }
+    let fixture = Fixture::new();
+    let mut config = fixture.config(
+        Provider::Codex,
+        "chatgpt_base_url = 'https://chatgpt.example/backend-api/' # proxy\n",
+    );
+    config
+        .set(&path(&["chatgpt_base_url"]), "https://other.example/", true)
+        .unwrap();
+    assert_eq!(
+        config.text,
+        "chatgpt_base_url = \"https://other.example/\" # proxy\n"
+    );
+}
+
+#[test]
+fn removing_tables_keeps_comments_above_array_and_child_table_headers() {
+    // テーブルの配列や、子テーブルだけを持つ暗黙のテーブルを未設定に戻しても、
+    // 見出しの上と行末のコメントは文書の末尾に残す。
+    for (original, parts, comments, removed) in [
+        (
+            "model = \"gpt-5\"\n\n# keep: why these skills are disabled\n[[skills.config]] # first entry\npath = \"/a/SKILL.md\"\nenabled = false\n\n# second skill\n[[skills.config]]\npath = \"/b/SKILL.md\"\n",
+            vec!["skills", "config"],
+            vec![
+                "# keep: why these skills are disabled",
+                "# first entry",
+                "# second skill",
+            ],
+            "SKILL.md",
+        ),
+        (
+            "model = \"gpt-5\"\n\n# keep: github server for reviews\n[mcp_servers.github]\ncommand = \"gh-mcp\"\n",
+            vec!["mcp_servers"],
+            vec!["# keep: github server for reviews"],
+            "gh-mcp",
+        ),
+    ] {
+        let fixture = Fixture::new();
+        let mut config = fixture.config(Provider::Codex, original);
+        config.remove(&path(&parts)).unwrap();
+        for comment in comments {
+            assert!(config.text.contains(comment), "{}", config.text);
+        }
+        assert!(!config.text.contains(removed), "{}", config.text);
+        assert!(config.text.starts_with("model = \"gpt-5\"\n"));
+        assert!(parse(Provider::Codex, &config.text).is_ok());
+        assert!(config.undo());
+        assert_eq!(config.text, original);
+    }
+}
+
+#[test]
+fn editor_accepts_altgr_characters_and_keeps_control_shortcuts() {
+    // WindowsではAltGrの文字がCtrl+Alt付きで届くため、文字として入力する。
+    let altgr = |character| {
+        KeyEvent::new(
+            KeyCode::Char(character),
+            KeyModifiers::CONTROL | KeyModifiers::ALT,
+        )
+    };
+    let mut editor = Editor::new("");
+    for character in ['{', '[', '@', '\\', '|', '~', '}', ']'] {
+        editor.handle(altgr(character), true);
+    }
+    assert_eq!(editor.text(), "{[@\\|~}]");
+    // Ctrlだけのショートカットはこれまでどおり動き、Altだけの文字は入力しない。
+    editor.handle(control('a'), true);
+    editor.handle(altgr('€'), true);
+    assert_eq!(editor.text(), "€{[@\\|~}]");
+    editor.handle(control('k'), true);
+    assert_eq!(editor.text(), "€");
+    editor.handle(KeyEvent::new(KeyCode::Char('x'), KeyModifiers::ALT), true);
+    assert_eq!(editor.text(), "€");
+    editor.handle(control('u'), true);
+    assert_eq!(editor.text(), "");
+}
+
+#[test]
+fn pasting_a_long_single_line_inserts_every_character_at_the_cursor() {
+    // 10万文字の1行を貼り付けても、文字ごとに挿入位置を探し直さずにまとめて挿入する。
+    // タブは空白2つにし、制御文字は入れない。
+    let pasted = format!("{}\t{}\u{1b}", "x".repeat(50_000), "日本".repeat(25_000));
+    let expected = format!("{}  {}", "x".repeat(50_000), "日本".repeat(25_000));
+    let mut editor = Editor::new("{}");
+    editor.handle(key(KeyCode::Left), true);
+    editor.insert(&pasted, true);
+    assert_eq!(editor.text(), format!("{{{expected}}}"));
+    assert_eq!(editor.col, 1 + expected.chars().count());
+    editor.handle(key(KeyCode::Char('!')), true);
+    assert!(editor.text().ends_with("日本!}"));
+}
+
+#[test]
+fn sensitive_values_outside_the_choices_stay_hidden_in_the_picker() {
+    // 候補外の現在の値も、一覧と同じく表示を許可するまで伏せる。伏せても値は保持する。
+    let fixture = Fixture::new();
+    let original =
+        "[mcp_servers.work.oauth]\ntoken_endpoint_auth_method = 'example-private-value'\n";
+    fixture.write(".codex/config.toml", original);
+    let mut app = fixture.app();
+    app.handle_key(key(KeyCode::Char(']')));
+    let name = "mcp_servers.work.oauth.token_endpoint_auth_method";
+    select_field(&mut app, name);
+    let mut terminal = Terminal::new(TestBackend::new(160, 45)).unwrap();
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    let screen = screen_text(&terminal);
+    assert!(screen.contains("現在の値: [hidden]（候補外）"), "{screen}");
+    assert!(!screen.contains("example-private-value"), "{screen}");
+    app.handle_key(key(KeyCode::Enter));
+    assert_eq!(app.config().unwrap().text, original);
+    assert_eq!(app.dirty_count(), 0);
+    app.handle_key(key(KeyCode::Char('h')));
+    select_field(&mut app, name);
+    terminal.draw(|frame| ui::draw(frame, &mut app)).unwrap();
+    assert!(screen_text(&terminal).contains("現在の値: example-private-value（候補外）"));
 }
