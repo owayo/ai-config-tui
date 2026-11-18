@@ -13,7 +13,7 @@ dependencies = [
 
 [[package]]
 name = "ai-config-tui"
-version = "26.11.101"
+version = "26.11.102"
 dependencies = [
  "anyhow",
  "clap",
